@@ -1,0 +1,133 @@
+.login-container {
+  min-height: 100vh;
+  background-color: var(--cor-agencia); /* Usa a cor dinâmica */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.login-card {
+  background-color: #ffffff;
+  width: 100%;
+  max-width: 28rem;
+  border-radius: 1.6rem;
+  padding: 2rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 1px 1px 7px 0px  black;
+}
+
+.login-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.logo-box {
+  background-color: var(--cor-agencia);
+  width: 6rem;
+  height: 6rem;
+  border-radius: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+
+.logo-letter {
+  color: #ffffff;
+  font-size: 3rem;
+  font-weight: bold;
+  font-style: italic;
+}
+
+.agency-name {
+  color: var(--cor-agencia);
+  font-size: 2.25rem;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  margin: 0;
+}
+
+.agency-subtitle {
+  color: #6b7280;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-top: 0.25rem;
+}
+
+.login-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem; /* Espaçamento entre os campos */
+}
+
+.input-group {
+  position: relative;
+}
+
+.input-label {
+  position: absolute;
+  top: -0.6rem;
+  left: 0.75rem;
+  background-color: #ffffff;
+  padding: 0 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.input-field {
+  width: 100%;
+  border: 2px solid #d1d5db;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  color: #1f2937;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.input-field:focus {
+  border-color: var(--cor-agencia);
+}
+
+.forgot-password-link {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.forgot-password-link:hover {
+  color: var(--cor-agencia);
+}
+
+.btn-submit {
+  display: block;     /* Transforma em bloco para aceitar margens automáticas */
+  margin-left: auto;  /* Empurra o elemento para a direita */
+  margin-right: auto; /* Empurra o elemento para a esquerda, centralizando-o */
+  width: 50%;
+  background-color: #333333;
+  color: #ffffff;
+  font-weight: bold;
+  padding: 0.2rem;
+  border-radius: 0.75rem;
+  border: none;
+  margin-top: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-submit:hover {
+  background-color: #000000;
+}

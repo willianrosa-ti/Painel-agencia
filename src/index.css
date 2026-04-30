@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Este é o verde padrão temporário. 
+     Depois, o React vai mudar esse valor sozinho dependendo da agência! */
+  --cor-agencia: #4CAF50; 
+}
