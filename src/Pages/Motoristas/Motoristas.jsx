@@ -15,7 +15,7 @@ export default function Motoristas() {
 
   const buscarFrota = async () => {
     const token = localStorage.getItem('tokenAgencia');
-    const res = await fetch('https://motoapp.azurewebsites.net/api/Motorista/listar', {
+    const res = await fetch('https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net/api/Motorista/listar', {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     if (res.ok) setFrota(await res.json());
@@ -26,7 +26,7 @@ export default function Motoristas() {
   const handleCadastrar = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem('tokenAgencia');
-    const res = await fetch('https://motoapp.azurewebsites.net/api/Motorista/cadastrar', {
+    const res = await fetch('https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net/api/Motorista/cadastrar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       // 2. MUDANÇA: Enviamos a variável 'senha' para a API junto com os outros dados

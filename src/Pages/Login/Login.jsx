@@ -12,7 +12,7 @@ export default function Login() {
     e.preventDefault(); 
     
     try {
-      const resposta = await fetch('https://motoapp.azurewebsites.net/api/Autenticacao/login', {
+      const resposta = await fetch('https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net/api/Autenticacao/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
