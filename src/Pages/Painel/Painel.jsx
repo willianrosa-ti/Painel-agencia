@@ -28,13 +28,13 @@ export default function Painel() {
 
     const buscarTudo = async () => {
       try {
-        const resResumo = await fetch('http://motoapp.azurewebsites.net/api/Agencia/resumo', { headers: { 'Authorization': `Bearer ${tokenSalvo}` } });
+        const resResumo = await fetch('https://motoapp.azurewebsites.net/api/Agencia/resumo', { headers: { 'Authorization': `Bearer ${tokenSalvo}` } });
         if (resResumo.ok) setDadosResumo(await resResumo.json());
 
-        const resFrota = await fetch('http://motoapp.azurewebsites.net/api/Motorista/listar', { headers: { 'Authorization': `Bearer ${tokenSalvo}` } });
+        const resFrota = await fetch('https://motoapp.azurewebsites.net/api/Motorista/listar', { headers: { 'Authorization': `Bearer ${tokenSalvo}` } });
         if (resFrota.ok) setFrota(await resFrota.json());
 
-        const resCorridas = await fetch('http://motoapp.azurewebsites.net/api/Corrida/listar-hoje', { headers: { 'Authorization': `Bearer ${tokenSalvo}` } });
+        const resCorridas = await fetch('https://motoapp.azurewebsites.net/api/Corrida/listar-hoje', { headers: { 'Authorization': `Bearer ${tokenSalvo}` } });
         if (resCorridas.ok) setCorridasAtivas(await resCorridas.json());
 
       } catch (erro) { console.error(erro); }
@@ -52,7 +52,7 @@ export default function Painel() {
     e.preventDefault();
     const token = localStorage.getItem('tokenAgencia');
     try {
-      const resposta = await fetch('http://motoapp.azurewebsites.net/api/Corrida/nova', {
+      const resposta = await fetch('https://motoapp.azurewebsites.net/api/Corrida/nova', {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ telefonePassageiro: telPassageiro, nomePassageiro: nomePassageiro, enderecoBusca: endBusca, enderecoDestino: endDestino, valorDaCorrida: valorCorrida })
       });
@@ -68,10 +68,10 @@ export default function Painel() {
         
         setTelPassageiro(''); setNomePassageiro(''); setEndBusca(''); setEndDestino(''); setValorCorrida(7.00); 
         
-        const resCorridas = await fetch('http://motoapp.azurewebsites.net/api/Corrida/listar-hoje', { headers: { 'Authorization': `Bearer ${token}` } });
+        const resCorridas = await fetch('https://motoapp.azurewebsites.net/api/Corrida/listar-hoje', { headers: { 'Authorization': `Bearer ${token}` } });
         if (resCorridas.ok) setCorridasAtivas(await resCorridas.json());
         
-        const resResumo = await fetch('http://motoapp.azurewebsites.net/api/Agencia/resumo', { headers: { 'Authorization': `Bearer ${token}` } });
+        const resResumo = await fetch('https://motoapp.azurewebsites.net/api/Agencia/resumo', { headers: { 'Authorization': `Bearer ${token}` } });
         if (resResumo.ok) setDadosResumo(await resResumo.json());
       }
     } catch (erro) { console.error("Erro:", erro); }

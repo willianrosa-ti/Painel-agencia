@@ -26,7 +26,7 @@ export default function Financeiro() {
     const buscarDadosFinanceiros = async () => {
       const token = localStorage.getItem('tokenAgencia');
       try {
-        const resposta = await fetch(`http://motoapp.azurewebsites.net/api/Financeiro/resumo?periodo=${periodo}`, {
+        const resposta = await fetch(`https://motoapp.azurewebsites.net/api/Financeiro/resumo?periodo=${periodo}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         
