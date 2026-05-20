@@ -4,7 +4,7 @@ import './Navbar.css';
 
 const API_BASE = 'https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net';
 
-const RESPOSTA_PADRAO_AGENCIA = 'Recebemos sua mensagem e estamos trabalhando para resolver, entraremos em contato em breve pelo Whatsapp assim que houver alguma atualização.';
+const RESPOSTA_PADRAO_AGENCIA = 'Recebemos sua mensagem e estamos trabalhando para resolver, entraremos em contato em breve pelo Whatsapp assim que houver atualização.';
 
 export default function Navbar({ nomeAgencia }) {
   const navegar = useNavigate();

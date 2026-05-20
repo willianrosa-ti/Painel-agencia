@@ -274,3 +274,100 @@
   border-radius: 4px;
   font-weight: bold;
 }
+/* --- AJUSTES FINAIS: valor personalizado, direcionamento e filtro do radar --- */
+.grupo-radio-valor-expandido {
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.input-valor-personalizado {
+  width: 150px;
+  padding: 0.65rem;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  font-weight: bold;
+}
+
+.grupo-direcionamento {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  background-color: #f8f9fa;
+  padding: 1rem;
+  border-radius: 4px;
+}
+
+.select-padrao {
+  padding: 0.8rem;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background-color: white;
+  font-size: 0.95rem;
+}
+
+.botao-despachar:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.cabecalho-radar-painel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.filtro-data-radar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background-color: #f8f9fa;
+  padding: 0.65rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.filtro-data-radar label {
+  font-weight: bold;
+  color: #4b5563;
+}
+
+.input-data-radar {
+  padding: 0.55rem;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
+.item-resumo strong {
+  min-width: 48px;
+  text-align: right;
+}
+
+.status-em-andamento {
+  background-color: #007bff;
+}
+
+@media (max-width: 768px) {
+  .grupo-inputs-duplo {
+    flex-direction: column;
+  }
+
+  .cabecalho-radar-painel {
+    align-items: flex-start;
+  }
+
+  .filtro-data-radar {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .input-pequeno,
+  .input-grande,
+  .input-padrao,
+  .select-padrao {
+    width: 100%;
+    box-sizing: border-box;
+  }
+}

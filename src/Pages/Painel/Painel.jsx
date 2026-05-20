@@ -1,109 +1,192 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../Components/Navbar';
 import './Painel.css';
 
+const API_BASE = 'https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net';
+
+function obterDataHojeInput() {
+  const hoje = new Date();
+  const ano = hoje.getFullYear();
+  const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+  const dia = String(hoje.getDate()).padStart(2, '0');
+  return `${ano}-${mes}-${dia}`;
+}
+
+function normalizarStatusParaClasse(status) {
+  return String(status || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, '-');
+}
+
 export default function Painel() {
   const [nomeAgencia, setNomeAgencia] = useState('');
-  const [dadosResumo, setDadosResumo] = useState(null); 
+  const [dadosResumo, setDadosResumo] = useState(null);
   const navegar = useNavigate();
 
-  // Estados para contagem do resumo e listar corridas
-  const [frota, setFrota] = useState([]); 
+  const [frota, setFrota] = useState([]);
   const [corridasAtivas, setCorridasAtivas] = useState([]);
+  const [dataFiltroRadar, setDataFiltroRadar] = useState(obterDataHojeInput());
 
-  // Estados exclusivos do formulário de Nova Corrida
   const [telPassageiro, setTelPassageiro] = useState('');
   const [nomePassageiro, setNomePassageiro] = useState('');
   const [endBusca, setEndBusca] = useState('');
   const [endDestino, setEndDestino] = useState('');
-  const [valorCorrida, setValorCorrida] = useState(7.00); 
+  const [tipoValor, setTipoValor] = useState('7');
+  const [valorPersonalizado, setValorPersonalizado] = useState('');
+  const [motoristaExclusivoId, setMotoristaExclusivoId] = useState('');
+  const [enviandoCorrida, setEnviandoCorrida] = useState(false);
+
+  const valorCorrida = useMemo(() => {
+    if (tipoValor === 'custom') {
+      const valorConvertido = Number(String(valorPersonalizado).replace(',', '.'));
+      return Number.isFinite(valorConvertido) ? valorConvertido : 0;
+    }
+
+    return Number(tipoValor);
+  }, [tipoValor, valorPersonalizado]);
+
+  const buscarTudo = useCallback(async () => {
+    const tokenSalvo = localStorage.getItem('tokenAgencia');
+    if (!tokenSalvo) {
+      navegar('/login');
+      return;
+    }
+
+    try {
+      const resResumo = await fetch(`${API_BASE}/api/Agencia/resumo`, {
+        headers: { Authorization: `Bearer ${tokenSalvo}` }
+      });
+      if (resResumo.ok) setDadosResumo(await resResumo.json());
+
+      const resFrota = await fetch(`${API_BASE}/api/Motorista/listar`, {
+        headers: { Authorization: `Bearer ${tokenSalvo}` }
+      });
+      if (resFrota.ok) setFrota(await resFrota.json());
+
+      const [ano, mes, dia] = dataFiltroRadar.split('-');
+      const urlCorridas = `${API_BASE}/api/Corrida/listar-hoje?dia=${Number(dia)}&mes=${Number(mes)}&ano=${Number(ano)}`;
+
+      const resCorridas = await fetch(urlCorridas, {
+        headers: { Authorization: `Bearer ${tokenSalvo}` }
+      });
+      if (resCorridas.ok) setCorridasAtivas(await resCorridas.json());
+    } catch (erro) {
+      console.error('Erro ao buscar dados do painel:', erro);
+    }
+  }, [dataFiltroRadar, navegar]);
 
   useEffect(() => {
     const nomeSalvo = localStorage.getItem('nomeAgencia');
     const tokenSalvo = localStorage.getItem('tokenAgencia');
 
-    if (!tokenSalvo) { navegar('/login'); return; } 
-    setNomeAgencia(nomeSalvo);
+    if (!tokenSalvo) {
+      navegar('/login');
+      return;
+    }
 
-    const buscarTudo = async () => {
-      try {
-        const resResumo = await fetch('https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net/api/Agencia/resumo', { headers: { 'Authorization': `Bearer ${tokenSalvo}` } });
-        if (resResumo.ok) setDadosResumo(await resResumo.json());
+    setNomeAgencia(nomeSalvo || '');
+    buscarTudo();
 
-        const resFrota = await fetch('https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net/api/Motorista/listar', { headers: { 'Authorization': `Bearer ${tokenSalvo}` } });
-        if (resFrota.ok) setFrota(await resFrota.json());
-
-        const resCorridas = await fetch('https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net/api/Corrida/listar-hoje', { headers: { 'Authorization': `Bearer ${tokenSalvo}` } });
-        if (resCorridas.ok) setCorridasAtivas(await resCorridas.json());
-
-      } catch (erro) { console.error(erro); }
-    };
-
-    buscarTudo(); 
-
-    // ITEM 2: Atualização em tempo real a cada 5 segundos
     const intervalo = setInterval(buscarTudo, 5000);
     return () => clearInterval(intervalo);
+  }, [buscarTudo, navegar]);
 
-  }, [navegar]);
+  const limparFormularioCorrida = () => {
+    setTelPassageiro('');
+    setNomePassageiro('');
+    setEndBusca('');
+    setEndDestino('');
+    setTipoValor('7');
+    setValorPersonalizado('');
+    setMotoristaExclusivoId('');
+  };
 
   const handleDespacharCorrida = async (e) => {
     e.preventDefault();
+
+    if (valorCorrida <= 0) {
+      alert('Informe um valor válido para a corrida.');
+      return;
+    }
+
     const token = localStorage.getItem('tokenAgencia');
+    const motoristaSelecionado = frota.find((m) => String(m.id) === String(motoristaExclusivoId));
+
+    setEnviandoCorrida(true);
+
     try {
-      const resposta = await fetch('https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net/api/Corrida/nova', {
-        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ telefonePassageiro: telPassageiro, nomePassageiro: nomePassageiro, enderecoBusca: endBusca, enderecoDestino: endDestino, valorDaCorrida: valorCorrida })
+      const resposta = await fetch(`${API_BASE}/api/Corrida/nova`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          telefonePassageiro: telPassageiro,
+          nomePassageiro,
+          enderecoBusca: endBusca,
+          enderecoDestino: endDestino,
+          valorDaCorrida: valorCorrida,
+          motoristaExclusivoId: motoristaExclusivoId ? Number(motoristaExclusivoId) : null
+        })
       });
 
-      if (resposta.ok) {
-        // 1. --- A MÁGICA DO WHATSAPP ENTRA AQUI ---
-        const textoWhatsApp = `🏍️ *NOVA CORRIDA*\n*Passageiro:* ${nomePassageiro}\n*Buscar em:* ${endBusca}\n*Levar para:* ${endDestino}\n*Valor:* R$ ${valorCorrida.toFixed(2)}`;
-        const linkWhatsApp = `https://web.whatsapp.com/send?text=${encodeURIComponent(textoWhatsApp)}`;
-        window.open(linkWhatsApp, 'aba_do_WhatApp');
-        // ------------------------------------------
+      const textoResposta = await resposta.text();
 
-        alert("🚀 Corrida despachada e enviada para o WhatsApp!");
-        
-        setTelPassageiro(''); setNomePassageiro(''); setEndBusca(''); setEndDestino(''); setValorCorrida(7.00); 
-        
-        const resCorridas = await fetch('https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net/api/Corrida/listar-hoje', { headers: { 'Authorization': `Bearer ${token}` } });
-        if (resCorridas.ok) setCorridasAtivas(await resCorridas.json());
-        
-        const resResumo = await fetch('https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net/api/Agencia/resumo', { headers: { 'Authorization': `Bearer ${token}` } });
-        if (resResumo.ok) setDadosResumo(await resResumo.json());
+      if (!resposta.ok) {
+        let mensagemErro = textoResposta;
+        try {
+          mensagemErro = JSON.parse(textoResposta).mensagem || mensagemErro;
+        } catch {}
+        alert(`Erro ao despachar corrida: ${mensagemErro}`);
+        return;
       }
-    } catch (erro) { console.error("Erro:", erro); }
+
+      const textoWhatsApp = `🏍️ *NOVA CORRIDA*\n*Passageiro:* ${nomePassageiro}\n*Buscar em:* ${endBusca}\n*Levar para:* ${endDestino}\n*Valor:* R$ ${valorCorrida.toFixed(2)}${motoristaSelecionado ? `\n*Direcionada para:* ${motoristaSelecionado.nome}` : ''}`;
+      const linkWhatsApp = `https://web.whatsapp.com/send?text=${encodeURIComponent(textoWhatsApp)}`;
+      window.open(linkWhatsApp, 'aba_do_WhatsApp');
+
+      alert(motoristaSelecionado ? '🚀 Corrida direcionada com sucesso!' : '🚀 Corrida despachada com sucesso!');
+
+      limparFormularioCorrida();
+      buscarTudo();
+    } catch (erro) {
+      console.error('Erro ao despachar corrida:', erro);
+      alert('Erro de conexão ao despachar corrida.');
+    } finally {
+      setEnviandoCorrida(false);
+    }
   };
 
-  // --- MATEMÁTICA DO RESUMO ---
-  const qtdEmAndamento = corridasAtivas.filter(c => c.status === 'Em Andamento').length;
-  const qtdConcluidas = corridasAtivas.filter(c => c.status === 'Concluída').length;
-  const qtdPendentes = corridasAtivas.filter(c => c.status === 'Pendente').length;
+  const qtdEmAndamento = corridasAtivas.filter((c) => c.status === 'Em Andamento').length;
+  const qtdConcluidas = corridasAtivas.filter((c) => c.status === 'Concluída').length;
+  const qtdPendentes = corridasAtivas.filter((c) => c.status === 'Pendente').length;
+  const motoristasDisponiveisParaDirecionar = frota.filter((m) => !m.suspenso);
 
   return (
     <div className="painel-fundo">
-      
       <Navbar nomeAgencia={nomeAgencia} />
 
       <main className="painel-conteudo">
-        
-        {/* CARTÃO DE RESUMO ATUALIZADO */}
-<div className="cartao-informativo cartao-resumo">
-  <h3 className="label-valor">Resumo da Operação</h3>
-  {dadosResumo ? (
-    <ul className="lista-resumo">
-      <li> Ativos: {frota.length}</li>
-      <li> Corridas: {corridasAtivas.length}</li>
-      <li style={{ color: '#ff9800' }}> Pendente: {qtdPendentes}</li>
-      <li style={{ color: '#17a2b8' }}> Em Andamento: {qtdEmAndamento}</li>
-      <li style={{ color: '#28a745' }}> Concluídas: {qtdConcluidas}</li>
-    </ul>
-  ) : ( <p>CARREGANDO...</p> )}
-</div>
+        <div className="cartao-informativo cartao-resumo">
+          <h3 className="label-valor">Resumo da Operação</h3>
+          {dadosResumo ? (
+            <ul className="lista-resumo">
+              <li className="item-resumo"><span>Online:</span> <strong>{dadosResumo.online ?? dadosResumo.ativos ?? 0}</strong></li>
+              <li className="item-resumo"><span>Total da Frota:</span> <strong>{dadosResumo.totalMotoristas ?? frota.length}</strong></li>
+              <li className="item-resumo"><span>Corridas no filtro:</span> <strong>{corridasAtivas.length}</strong></li>
+              <li className="item-resumo texto-laranja"><span>Pendentes:</span> <strong>{qtdPendentes}</strong></li>
+              <li className="item-resumo texto-azul"><span>Em Andamento:</span> <strong>{qtdEmAndamento}</strong></li>
+              <li className="item-resumo texto-verde"><span>Concluídas:</span> <strong>{qtdConcluidas}</strong></li>
+            </ul>
+          ) : (
+            <p>CARREGANDO...</p>
+          )}
+        </div>
 
-        {/* CARTÃO DE NOVA CORRIDA */}
         <div className="cartao-informativo cartao-nova-corrida">
           <h3 className="titulo-verde">🚀 Nova Corrida</h3>
           <form onSubmit={handleDespacharCorrida} className="formulario-corrida">
@@ -111,21 +194,70 @@ export default function Painel() {
               <input type="text" placeholder="Telefone" value={telPassageiro} onChange={(e) => setTelPassageiro(e.target.value)} required className="input-pequeno" />
               <input type="text" placeholder="Nome do Passageiro" value={nomePassageiro} onChange={(e) => setNomePassageiro(e.target.value)} required className="input-grande" />
             </div>
+
             <input type="text" placeholder="Endereço de Busca" value={endBusca} onChange={(e) => setEndBusca(e.target.value)} required className="input-padrao" />
             <input type="text" placeholder="Destino" value={endDestino} onChange={(e) => setEndDestino(e.target.value)} required className="input-padrao" />
-            <div className="grupo-radio-valor">
+
+            <div className="grupo-radio-valor grupo-radio-valor-expandido">
               <span className="label-valor">Valor:</span>
-              <label className="opcao-radio"><input type="radio" value={7} checked={valorCorrida === 7} onChange={() => setValorCorrida(7)} /> R$ 7,00</label>
-              <label className="opcao-radio"><input type="radio" value={12} checked={valorCorrida === 12} onChange={() => setValorCorrida(12)} /> R$ 12,00</label>
+              <label className="opcao-radio"><input type="radio" value="7" checked={tipoValor === '7'} onChange={() => setTipoValor('7')} /> R$ 7,00</label>
+              <label className="opcao-radio"><input type="radio" value="12" checked={tipoValor === '12'} onChange={() => setTipoValor('12')} /> R$ 12,00</label>
+              <label className="opcao-radio"><input type="radio" value="custom" checked={tipoValor === 'custom'} onChange={() => setTipoValor('custom')} /> Outro valor</label>
+              {tipoValor === 'custom' && (
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="Ex: 15,00"
+                  value={valorPersonalizado}
+                  onChange={(e) => setValorPersonalizado(e.target.value)}
+                  className="input-valor-personalizado"
+                  required
+                />
+              )}
             </div>
-            <button type="submit" className="botao-despachar">DESPACHAR</button>
+
+            <div className="grupo-direcionamento">
+              <label className="label-valor" htmlFor="motoristaExclusivo">Direcionar corrida:</label>
+              <select
+                id="motoristaExclusivo"
+                value={motoristaExclusivoId}
+                onChange={(e) => setMotoristaExclusivoId(e.target.value)}
+                className="select-padrao"
+              >
+                <option value="">Todos os motoristas disponíveis</option>
+                {motoristasDisponiveisParaDirecionar.map((motorista) => (
+                  <option key={motorista.id} value={motorista.id}>
+                    {motorista.nome} - {motorista.placaMoto}{motorista.online ? ' (online)' : ' (offline)'}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <button type="submit" className="botao-despachar" disabled={enviandoCorrida}>
+              {enviandoCorrida ? 'DESPACHANDO...' : 'DESPACHAR'}
+            </button>
           </form>
         </div>
 
-        {/* CARTÃO DO RADAR DE CORRIDAS */}
         <div className="cartao-informativo cartao-radar">
-          <h3 className="titulo-azul">📡 Radar de Corridas (Hoje)</h3>
-          {corridasAtivas.length === 0 ? ( <p className="texto-vazio">Nenhuma corrida registrada hoje.</p> ) : (
+          <div className="cabecalho-radar-painel">
+            <h3 className="titulo-azul">📡 Radar de Corridas</h3>
+            <div className="filtro-data-radar">
+              <label htmlFor="dataRadar">Filtrar data:</label>
+              <input
+                id="dataRadar"
+                type="date"
+                value={dataFiltroRadar}
+                onChange={(e) => setDataFiltroRadar(e.target.value)}
+                className="input-data-radar"
+              />
+            </div>
+          </div>
+
+          {corridasAtivas.length === 0 ? (
+            <p className="texto-vazio">Nenhuma corrida registrada nesta data.</p>
+          ) : (
             <table className="tabela-radar">
               <thead>
                 <tr>
@@ -140,16 +272,17 @@ export default function Painel() {
                 {corridasAtivas.map((c) => (
                   <tr key={c.id}>
                     <td><strong>{c.passageiro}</strong></td>
-                    <td className="celula-trajeto">De: {c.busca}<br/>Para: {c.destino}</td>
-                    <td className="celula-valor">R$ {c.valor.toFixed(2)}</td>
+                    <td className="celula-trajeto">De: {c.busca}<br />Para: {c.destino}</td>
+                    <td className="celula-valor">R$ {Number(c.valor).toFixed(2)}</td>
                     <td>
-                      <span className={c.motorista === "Buscando motorista..." ? "motorista-buscando" : "motorista-encontrado"}>
-                        {c.motorista === "Buscando motorista..." ? "⏳ " + c.motorista : "🏍️ " + c.motorista}
+                      <span className={c.motorista === 'Buscando motorista...' || c.motorista === 'Buscando...' ? 'motorista-buscando' : 'motorista-encontrado'}>
+                        {c.motorista === 'Buscando motorista...' || c.motorista === 'Buscando...'
+                          ? `${c.motoristaExclusivoId ? '🎯 ' : '⏳ '}${c.motorista}`
+                          : `🏍️ ${c.motorista}`}
                       </span>
                     </td>
                     <td>
-                      {/* ITEM 3: Suporte ao status concluída com substituição de caractere especial no CSS */}
-                      <span className={`badge-status status-${c.status.toLowerCase().replace(' ', '-').replace('í', 'i')}`}>
+                      <span className={`badge-status status-${normalizarStatusParaClasse(c.status)}`}>
                         {c.status}
                       </span>
                     </td>
@@ -159,7 +292,6 @@ export default function Painel() {
             </table>
           )}
         </div>
-
       </main>
     </div>
   );

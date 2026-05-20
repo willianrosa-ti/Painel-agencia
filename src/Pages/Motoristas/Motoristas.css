@@ -4,6 +4,7 @@
 
 .motoristas-titulo {
   margin-bottom: 1.5rem;
+  font-weight: bolder;
 }
 
 .cartao-adicionar-motorista {
@@ -11,17 +12,32 @@
   padding: 2rem;
   border-radius: 8px;
   margin-bottom: 2rem;
+  border: 1px solid #e5e7eb;
+}
+
+.cabecalho-form-motorista {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.cabecalho-form-motorista h3 {
+  margin: 0;
 }
 
 .formulario-motorista {
   display: flex;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .input-motorista {
   padding: 10px;
   border: 1px solid #ccc;
   border-radius: 4px;
+  min-width: 180px;
 }
 
 .botao-cadastrar-motorista {
@@ -34,9 +50,28 @@
   font-weight: bold;
 }
 
+.botao-cadastrar-motorista:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.botao-cancelar-edicao {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
 .tabela-motoristas {
   width: 100%;
   border-collapse: collapse;
+  background-color: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
 .cabecalho-tabela {
@@ -61,11 +96,80 @@
   font-weight: bold;
 }
 
+.celula-vazia {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+}
+
 .status-motorista-ativo {
   color: green;
   font-weight: bold;
 }
 
-.motoristas-titulo {
-  font-weight: bolder;
+.status-motorista-suspenso {
+  color: #dc3545;
+  font-weight: bold;
+}
+
+.status-motorista-online {
+  color: #00a651;
+  font-weight: bold;
+}
+
+.status-motorista-offline {
+  color: #777;
+  font-weight: bold;
+}
+
+.acoes-motorista {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.botao-acao {
+  border: none;
+  padding: 7px 10px;
+  border-radius: 4px;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 0.82rem;
+}
+
+.botao-acao.editar {
+  background-color: #007bff;
+}
+
+.botao-acao.suspender {
+  background-color: #ffc107;
+  color: #333;
+}
+
+.botao-acao.reativar {
+  background-color: #28a745;
+}
+
+.botao-acao.excluir {
+  background-color: #dc3545;
+}
+
+@media (max-width: 900px) {
+  .formulario-motorista {
+    flex-direction: column;
+  }
+
+  .input-motorista,
+  .botao-cadastrar-motorista {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .tabela-motoristas {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
 }

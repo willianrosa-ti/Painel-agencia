@@ -1,42 +1,169 @@
 import { useEffect, useState } from 'react';
-import Navbar from '../../Components/Navbar'; 
+import Navbar from '../../Components/Navbar';
 import './Motoristas.css';
+
+const API_BASE = 'https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net';
 
 export default function Motoristas() {
   const [frota, setFrota] = useState([]);
   const [nome, setNome] = useState('');
   const [telefone, setTelefone] = useState('');
   const [placa, setPlaca] = useState('');
-  
-  // 1. NOVO ESTADO: Variável para guardar a senha
   const [senha, setSenha] = useState('');
-  
+  const [motoristaEditando, setMotoristaEditando] = useState(null);
+  const [salvando, setSalvando] = useState(false);
+
   const nomeAgencia = localStorage.getItem('nomeAgencia');
 
   const buscarFrota = async () => {
     const token = localStorage.getItem('tokenAgencia');
-    const res = await fetch('https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net/api/Motorista/listar', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    if (res.ok) setFrota(await res.json());
+    try {
+      const res = await fetch(`${API_BASE}/api/Motorista/listar`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) setFrota(await res.json());
+    } catch (erro) {
+      console.error('Erro ao buscar frota:', erro);
+    }
   };
 
-  useEffect(() => { buscarFrota(); }, []);
+  useEffect(() => {
+    buscarFrota();
+  }, []);
 
-  const handleCadastrar = async (e) => {
+  const limparFormulario = () => {
+    setNome('');
+    setTelefone('');
+    setPlaca('');
+    setSenha('');
+    setMotoristaEditando(null);
+  };
+
+  const lerMensagemErro = async (res) => {
+    const texto = await res.text();
+    try {
+      const json = JSON.parse(texto);
+      return json.mensagem || texto;
+    } catch {
+      return texto || 'Erro inesperado.';
+    }
+  };
+
+  const handleCadastrarOuEditar = async (e) => {
     e.preventDefault();
+
+    if (!motoristaEditando && !senha.trim()) {
+      alert('Informe uma senha para o novo motorista.');
+      return;
+    }
+
     const token = localStorage.getItem('tokenAgencia');
-    const res = await fetch('https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net/api/Motorista/cadastrar', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      // 2. MUDANÇA: Enviamos a variável 'senha' para a API junto com os outros dados
-      body: JSON.stringify({ nome, telefone, placaMoto: placa, senha })
-    });
-    if (res.ok) {
-      alert("Motorista adicionado com sucesso!");
-      // 3. Limpa os campos, incluindo a senha
-      setNome(''); setTelefone(''); setPlaca(''); setSenha('');
+    const editando = Boolean(motoristaEditando);
+    const url = editando
+      ? `${API_BASE}/api/Motorista/editar/${motoristaEditando.id}`
+      : `${API_BASE}/api/Motorista/cadastrar`;
+
+    setSalvando(true);
+
+    try {
+      const res = await fetch(url, {
+        method: editando ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          nome,
+          telefone,
+          placaMoto: placa,
+          senha: senha.trim() || null
+        })
+      });
+
+      if (!res.ok) {
+        alert(await lerMensagemErro(res));
+        return;
+      }
+
+      alert(editando ? 'Motorista atualizado com sucesso!' : 'Motorista adicionado com sucesso!');
+      limparFormulario();
       buscarFrota();
+    } catch (erro) {
+      console.error('Erro ao salvar motorista:', erro);
+      alert('Erro de conexão ao salvar motorista.');
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  const iniciarEdicao = (motorista) => {
+    setMotoristaEditando(motorista);
+    setNome(motorista.nome || '');
+    setTelefone(motorista.telefone || '');
+    setPlaca(motorista.placaMoto || '');
+    setSenha('');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const alterarSuspensao = async (motorista) => {
+    const novoStatusSuspenso = !motorista.suspenso;
+    const confirmar = window.confirm(
+      novoStatusSuspenso
+        ? `Suspender ${motorista.nome}? Ele não conseguirá entrar no app nem receber corridas.`
+        : `Reativar ${motorista.nome}? Ele voltará a poder usar o app.`
+    );
+
+    if (!confirmar) return;
+
+    const token = localStorage.getItem('tokenAgencia');
+
+    try {
+      const res = await fetch(`${API_BASE}/api/Motorista/suspender/${motorista.id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(novoStatusSuspenso)
+      });
+
+      if (!res.ok) {
+        alert(await lerMensagemErro(res));
+        return;
+      }
+
+      buscarFrota();
+    } catch (erro) {
+      console.error('Erro ao alterar suspensão:', erro);
+      alert('Erro de conexão ao alterar status do motorista.');
+    }
+  };
+
+  const excluirMotorista = async (motorista) => {
+    const confirmar = window.confirm(
+      `Excluir ${motorista.nome} da frota?\n\nO histórico financeiro e de corridas será preservado, mas ele não aparecerá mais no painel nem conseguirá acessar o app.`
+    );
+
+    if (!confirmar) return;
+
+    const token = localStorage.getItem('tokenAgencia');
+
+    try {
+      const res = await fetch(`${API_BASE}/api/Motorista/excluir/${motorista.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (!res.ok) {
+        alert(await lerMensagemErro(res));
+        return;
+      }
+
+      if (motoristaEditando?.id === motorista.id) limparFormulario();
+      buscarFrota();
+    } catch (erro) {
+      console.error('Erro ao excluir motorista:', erro);
+      alert('Erro de conexão ao excluir motorista.');
     }
   };
 
@@ -45,18 +172,31 @@ export default function Motoristas() {
       <Navbar nomeAgencia={nomeAgencia} />
       <div className="motoristas-container">
         <h2 className="motoristas-titulo">📋 Gestão da Frota ({frota.length} motoristas)</h2>
-        
+
         <div className="cartao-adicionar-motorista">
-          <h3>➕ Adicionar Novo Motorista</h3>
-          <form onSubmit={handleCadastrar} className="formulario-motorista" style={{ flexWrap: 'wrap' }}>
-            <input type="text" placeholder="Nome" value={nome} onChange={e => setNome(e.target.value)} required className="input-motorista" />
-            <input type="text" placeholder="Telefone" value={telefone} onChange={e => setTelefone(e.target.value)} required className="input-motorista" />
-            <input type="text" placeholder="Placa da Moto" value={placa} onChange={e => setPlaca(e.target.value)} required className="input-motorista" />
-            
-            {/* 4. MUDANÇA: O novo campo de senha na tela */}
-            <input type="password" placeholder="Senha para o App" value={senha} onChange={e => setSenha(e.target.value)} required className="input-motorista" />
-            
-            <button type="submit" className="botao-cadastrar-motorista">Cadastrar</button>
+          <div className="cabecalho-form-motorista">
+            <h3>{motoristaEditando ? `✏️ Editando: ${motoristaEditando.nome}` : '➕ Adicionar Novo Motorista'}</h3>
+            {motoristaEditando && (
+              <button type="button" className="botao-cancelar-edicao" onClick={limparFormulario}>Cancelar edição</button>
+            )}
+          </div>
+
+          <form onSubmit={handleCadastrarOuEditar} className="formulario-motorista">
+            <input type="text" placeholder="Nome" value={nome} onChange={(e) => setNome(e.target.value)} required className="input-motorista" />
+            <input type="text" placeholder="Telefone" value={telefone} onChange={(e) => setTelefone(e.target.value)} required className="input-motorista" />
+            <input type="text" placeholder="Placa da Moto" value={placa} onChange={(e) => setPlaca(e.target.value.toUpperCase())} required className="input-motorista" />
+            <input
+              type="password"
+              placeholder={motoristaEditando ? 'Nova senha (opcional)' : 'Senha para o App'}
+              value={senha}
+              onChange={(e) => setSenha(e.target.value)}
+              required={!motoristaEditando}
+              className="input-motorista"
+            />
+
+            <button type="submit" className="botao-cadastrar-motorista" disabled={salvando}>
+              {salvando ? 'Salvando...' : motoristaEditando ? 'Salvar alterações' : 'Cadastrar'}
+            </button>
           </form>
         </div>
 
@@ -68,18 +208,48 @@ export default function Motoristas() {
               <th>Telefone</th>
               <th>Placa</th>
               <th>Status</th>
+              <th>Online</th>
+              <th>Ações</th>
             </tr>
           </thead>
           <tbody>
-            {frota.map(m => (
-              <tr key={m.id} className="linha-tabela-motorista">
-                <td className="celula-id">#{m.id}</td>
-                <td>{m.nome}</td>
-                <td>{m.telefone}</td>
-                <td>{m.placaMoto}</td>
-                <td><span className="status-motorista-ativo">● Ativo</span></td>
+            {frota.length === 0 ? (
+              <tr>
+                <td colSpan="7" className="celula-vazia">Nenhum motorista cadastrado.</td>
               </tr>
-            ))}
+            ) : (
+              frota.map((m) => (
+                <tr key={m.id} className="linha-tabela-motorista">
+                  <td className="celula-id">#{m.id}</td>
+                  <td>{m.nome}</td>
+                  <td>{m.telefone}</td>
+                  <td>{m.placaMoto}</td>
+                  <td>
+                    {m.suspenso ? (
+                      <span className="status-motorista-suspenso">● Suspenso</span>
+                    ) : (
+                      <span className="status-motorista-ativo">● Ativo</span>
+                    )}
+                  </td>
+                  <td>
+                    {m.online ? (
+                      <span className="status-motorista-online">● Online</span>
+                    ) : (
+                      <span className="status-motorista-offline">● Offline</span>
+                    )}
+                  </td>
+                  <td>
+                    <div className="acoes-motorista">
+                      <button type="button" className="botao-acao editar" onClick={() => iniciarEdicao(m)}>Editar</button>
+                      <button type="button" className={m.suspenso ? 'botao-acao reativar' : 'botao-acao suspender'} onClick={() => alterarSuspensao(m)}>
+                        {m.suspenso ? 'Reativar' : 'Suspender'}
+                      </button>
+                      <button type="button" className="botao-acao excluir" onClick={() => excluirMotorista(m)}>Excluir</button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
