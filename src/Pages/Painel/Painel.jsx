@@ -277,7 +277,7 @@ export default function Painel() {
                     <td>
                       <span className={c.motorista === 'Buscando motorista...' || c.motorista === 'Buscando...' ? 'motorista-buscando' : 'motorista-encontrado'}>
                         {c.motorista === 'Buscando motorista...' || c.motorista === 'Buscando...'
-                          ? `${c.motoristaExclusivoId ? '🎯 ' : '⏳ '}${c.motorista}`
+                          ? `${c.motoristaExclusivoId ? ' ' : ' '}${c.motorista}`
                           : `🏍️ ${c.motorista}`}
                       </span>
                     </td>
