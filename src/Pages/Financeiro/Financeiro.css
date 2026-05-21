@@ -38,7 +38,7 @@
 }
 
 .botao-filtro.ativo {
-  background-color: #28a745;
+  background-color: var(--cor-agencia, #111827);
   color: white;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
@@ -59,11 +59,11 @@
 }
 
 .cartao-destaque-verde {
-  border-top-color: #28a745;
+  border-top-color: var(--cor-agencia, #111827);
 }
 
 .cartao-destaque-azul {
-  border-top-color: #007bff;
+  border-top-color: var(--cor-agencia-secundaria, #38bdf8);
 }
 
 .cartao-destaque-amarelo {
@@ -90,7 +90,7 @@
 
 .valor-ranking {
   font-weight: bold;
-  color: #28a745;
+  color: var(--cor-agencia, #111827);
 }
 /* --- AJUSTES FINAIS: filtro de mês --- */
 .subtitulo-financeiro {

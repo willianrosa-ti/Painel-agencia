@@ -1,78 +1,122 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // Ferramenta para trocar de tela
-import './Login.css'; 
+import { useNavigate } from 'react-router-dom';
+import './Login.css';
+
+const API_BASE = 'https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net';
+
+function salvarPerfilAgencia(dados) {
+  const agencia = dados?.agencia || {};
+
+  localStorage.setItem('tokenAgencia', dados.token);
+  localStorage.setItem('idAgencia', String(dados.agenciaId || agencia.id || ''));
+  localStorage.setItem('nomeAgencia', dados.nome || agencia.nome || 'Minha Agência');
+  localStorage.setItem('corAgenciaPrimaria', agencia.corPrimaria || '#111827');
+  localStorage.setItem('corAgenciaSecundaria', agencia.corSecundaria || '#38bdf8');
+
+  if (agencia.logoUrl) {
+    localStorage.setItem('logoAgenciaUrl', agencia.logoUrl);
+  } else {
+    localStorage.removeItem('logoAgenciaUrl');
+  }
+}
 
 export default function Login() {
   const [telefone, setTelefone] = useState('');
   const [senha, setSenha] = useState('');
-  
-  const navegar = useNavigate(); // Criamos a variável de navegação
+  const [carregando, setCarregando] = useState(false);
+  const navegar = useNavigate();
 
   const handleLogin = async (e) => {
-    e.preventDefault(); 
-    
+    e.preventDefault();
+
+    if (!telefone.trim() || !senha.trim()) {
+      alert('Informe telefone e senha para entrar.');
+      return;
+    }
+
+    setCarregando(true);
+
     try {
-      const resposta = await fetch('https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net/api/Autenticacao/login', {
+      const resposta = await fetch(`${API_BASE}/api/Autenticacao/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          telefone: telefone,
-          senha: senha
+          telefone: telefone.trim(),
+          senha
         })
       });
 
-      const dados = await resposta.json();
+      const textoResposta = await resposta.text();
+      let dados = {};
 
-      if (resposta.ok) {
-        // 1. Guardamos o crachá (Token) e o Nome na memória do navegador
-        localStorage.setItem('tokenAgencia', dados.token);
-        localStorage.setItem('nomeAgencia', dados.nome);
-        localStorage.setItem('idAgencia', dados.agenciaId);
-
-        // 2. Trocamos de tela automaticamente para o Painel!
-        navegar('/painel');
-      } else {
-        alert(`Erro: ${dados.mensagem}`);
+      try {
+        dados = textoResposta ? JSON.parse(textoResposta) : {};
+      } catch {
+        dados = { mensagem: textoResposta };
       }
 
+      if (resposta.ok) {
+        salvarPerfilAgencia(dados);
+        navegar('/painel');
+        return;
+      }
+
+      alert(`Erro: ${dados.mensagem || 'Não foi possível realizar o login.'}`);
     } catch (erro) {
-      console.error("Erro na comunicação com a API:", erro);
-      alert("Não foi possível conectar ao servidor.");
+      console.error('Erro na comunicação com a API:', erro);
+      alert('Não foi possível conectar ao servidor.');
+    } finally {
+      setCarregando(false);
     }
   };
 
   return (
     <div className="login-container">
-      {/* ... o restante do seu HTML (Hypertext Markup Language) continua exatamente igual ... */}
       <div className="login-card">
         <div className="login-header">
-          <div className="logo-box">
-            <span className="logo-letter">T</span>
+          <div className="mil-lin-logo" aria-label="Logo MIL-LIN">
+            <span className="mil-lin-logo__nome">M I L - L I N</span>
+            <span className="mil-lin-logo__icone">
+              <span className="mil-lin-logo__tela" />
+              <span className="mil-lin-logo__base" />
+            </span>
           </div>
-          <h1 className="agency-name">MOTO-THALES</h1>
-          <p className="agency-subtitle">Painel da Agência</p>
+          <h1 className="login-title">Acesso da Agência</h1>
+          <p className="login-subtitle">Entre para carregar o painel personalizado do seu ponto</p>
         </div>
+
         <form onSubmit={handleLogin} className="login-form">
           <div className="input-group">
-            <label className="input-label">Telefone da Agência</label>
-            <input 
-              type="text" placeholder="(00) 00000-0000"
-              value={telefone} onChange={(e) => setTelefone(e.target.value)}
+            <label className="input-label" htmlFor="telefone">Telefone da Agência</label>
+            <input
+              id="telefone"
+              type="text"
+              placeholder="(00) 00000-0000"
+              value={telefone}
+              onChange={(e) => setTelefone(e.target.value)}
               className="input-field"
+              autoComplete="username"
             />
           </div>
+
           <div className="input-group">
-            <label className="input-label">Senha</label>
-            <input 
-              type="password" placeholder="Senha"
-              value={senha} onChange={(e) => setSenha(e.target.value)}
+            <label className="input-label" htmlFor="senha">Senha</label>
+            <input
+              id="senha"
+              type="password"
+              placeholder="Senha"
+              value={senha}
+              onChange={(e) => setSenha(e.target.value)}
               className="input-field"
+              autoComplete="current-password"
             />
           </div>
-          <div><a href="#" className="forgot-password-link">Esqueceu o acesso?</a></div>
-          <button type="submit" className="btn-submit">ENTRAR</button>
+
+          <button type="submit" className="btn-submit" disabled={carregando}>
+            {carregando ? 'ENTRANDO...' : 'ENTRAR'}
+          </button>
         </form>
       </div>
     </div>

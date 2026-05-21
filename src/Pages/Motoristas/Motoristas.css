@@ -41,7 +41,7 @@
 }
 
 .botao-cadastrar-motorista {
-  background-color: #007bff;
+  background-color: var(--cor-agencia, #111827);
   color: white;
   border: none;
   padding: 10px 20px;
@@ -140,7 +140,7 @@
 }
 
 .botao-acao.editar {
-  background-color: #007bff;
+  background-color: var(--cor-agencia, #111827);
 }
 
 .botao-acao.suspender {
@@ -149,7 +149,7 @@
 }
 
 .botao-acao.reativar {
-  background-color: #28a745;
+  background-color: var(--cor-agencia, #111827);
 }
 
 .botao-acao.excluir {

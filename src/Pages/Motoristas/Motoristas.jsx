@@ -4,6 +4,14 @@ import './Motoristas.css';
 
 const API_BASE = 'https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net';
 
+function aplicarTemaAgencia() {
+  const corPrimaria = localStorage.getItem('corAgenciaPrimaria') || '#111827';
+  const corSecundaria = localStorage.getItem('corAgenciaSecundaria') || '#38bdf8';
+
+  document.documentElement.style.setProperty('--cor-agencia', corPrimaria);
+  document.documentElement.style.setProperty('--cor-agencia-secundaria', corSecundaria);
+}
+
 export default function Motoristas() {
   const [frota, setFrota] = useState([]);
   const [nome, setNome] = useState('');
@@ -28,6 +36,7 @@ export default function Motoristas() {
   };
 
   useEffect(() => {
+    aplicarTemaAgencia();
     buscarFrota();
   }, []);
 

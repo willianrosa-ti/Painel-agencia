@@ -4,6 +4,14 @@ import './Financeiro.css';
 
 const API_BASE = 'https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net';
 
+function aplicarTemaAgencia() {
+  const corPrimaria = localStorage.getItem('corAgenciaPrimaria') || '#111827';
+  const corSecundaria = localStorage.getItem('corAgenciaSecundaria') || '#38bdf8';
+
+  document.documentElement.style.setProperty('--cor-agencia', corPrimaria);
+  document.documentElement.style.setProperty('--cor-agencia-secundaria', corSecundaria);
+}
+
 const mesesDoAno = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
@@ -41,6 +49,8 @@ export default function Financeiro() {
   };
 
   useEffect(() => {
+    aplicarTemaAgencia();
+
     const buscarDadosFinanceiros = async () => {
       const token = localStorage.getItem('tokenAgencia');
       try {
@@ -110,7 +120,7 @@ export default function Financeiro() {
           <div className="grid-financeiro">
             <div className="cartao-financeiro cartao-destaque-verde">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                <h3 style={{ color: '#28a745', margin: 0, fontWeight: 'bold' }}> Arrecadação de Diárias</h3>
+                <h3 style={{ color: 'var(--cor-agencia, #111827)', margin: 0, fontWeight: 'bold' }}> Arrecadação de Diárias</h3>
 
                 <button
                   onClick={handleAlternarOlho}

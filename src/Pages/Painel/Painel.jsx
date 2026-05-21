@@ -21,6 +21,14 @@ function normalizarStatusParaClasse(status) {
     .replace(/\s+/g, '-');
 }
 
+function aplicarTemaAgencia() {
+  const corPrimaria = localStorage.getItem('corAgenciaPrimaria') || '#111827';
+  const corSecundaria = localStorage.getItem('corAgenciaSecundaria') || '#38bdf8';
+
+  document.documentElement.style.setProperty('--cor-agencia', corPrimaria);
+  document.documentElement.style.setProperty('--cor-agencia-secundaria', corSecundaria);
+}
+
 export default function Painel() {
   const [nomeAgencia, setNomeAgencia] = useState('');
   const [dadosResumo, setDadosResumo] = useState(null);
@@ -88,6 +96,7 @@ export default function Painel() {
     }
 
     setNomeAgencia(nomeSalvo || '');
+    aplicarTemaAgencia();
     buscarTudo();
 
     const intervalo = setInterval(buscarTudo, 5000);

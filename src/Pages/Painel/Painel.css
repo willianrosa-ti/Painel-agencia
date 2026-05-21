@@ -6,7 +6,7 @@
 }
 
 .painel-cabecalho {
-  background-color: var(--cor-agencia);
+  background-color: var(--cor-agencia, #111827);
   color: white;
   padding: 1rem 2rem;
   display: flex;
@@ -43,7 +43,7 @@
 
 .botao-sair:hover {
   background-color: white;
-  color: var(--cor-agencia);
+  color: var(--cor-agencia, #111827);
 }
 
 .cartao-informativo {
@@ -79,11 +79,11 @@
 .cartao-nova-corrida {
   flex: 2;
   min-width: 350px;
-  border-top: 4px solid #28a745;
+  border-top: 4px solid var(--cor-agencia, #111827);
 }
 
 .titulo-verde {
-  color: #28a745;
+  color: var(--cor-agencia, #111827);
 }
 
 .formulario-corrida {
@@ -136,7 +136,7 @@
 
 .botao-despachar {
   padding: 1rem;
-  background-color: #28a745;
+  background-color: var(--cor-agencia, #111827);
   color: white;
   border: none;
   border-radius: 4px;
@@ -188,12 +188,12 @@
 }
 
 .celula-valor {
-  color: #28a745;
+  color: var(--cor-agencia, #111827);
   font-weight: bold;
 }
 
 .motorista-buscando {
-  color: #c0b302;
+  color: #ffc107;
   font-weight: bolder;
 }
 
@@ -220,7 +220,7 @@
 }
 
 .status-concluida {
-  background-color: #28a745;
+  background-color: var(--cor-agencia, #111827);
 }
 
 /* --- STATUS BADGES --- */
@@ -234,13 +234,13 @@
 
 .status-pendente { background-color: #ffc107; color: #333; } /* Amarelo */
 .status-em-andamento { background-color: #007bff; } /* Azul */
-.status-concluida { background-color: #28a745; } /* Verde - PARA O STATUS CONCLUÍDA */
+.status-concluida { background-color: var(--cor-agencia, #111827); } /* Verde - PARA O STATUS CONCLUÍDA */
 .status-cancelada { background-color: #dc3545; } /* Vermelho */
 
 /* --- CORES DO RESUMO --- */
 .texto-laranja { color: #d39e00; }
 .texto-azul { color: #007bff; }
-.texto-verde { color: #28a745; }
+.texto-verde { color: var(--cor-agencia, #111827); }
 
 .lista-resumo {
   display: flex;
@@ -259,7 +259,7 @@
 
 /* Cor para o status Concluída na tabela */
 .status-concluida {
-  background-color: #28a745;
+  background-color: var(--cor-agencia, #111827);
   color: white;
   padding: 4px 8px;
   border-radius: 4px;
