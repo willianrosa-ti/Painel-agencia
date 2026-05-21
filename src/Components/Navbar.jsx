@@ -1,10 +1,48 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import './Navbar.css';
 
 const API_BASE = 'https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net';
 
-const RESPOSTA_PADRAO_AGENCIA = 'Recebemos sua mensagem e estamos trabalhando para resolver, entraremos em contato em breve pelo Whatsapp assim que houver atualização.';
+const RESPOSTA_PADRAO_AGENCIA =
+  'Recebemos sua mensagem e estamos trabalhando para resolver, entraremos em contato em breve pelo Whatsapp assim que houver atualização.';
+
+function corValida(valor, corPadrao) {
+  if (typeof valor !== 'string') return corPadrao;
+
+  const cor = valor.trim();
+
+  if (!cor || cor.toLowerCase() === 'null' || cor.toLowerCase() === 'undefined') {
+    return corPadrao;
+  }
+
+  const ehHexadecimal = /^#([0-9A-F]{3}|[0-9A-F]{6})$/i.test(cor);
+
+  return ehHexadecimal ? cor : corPadrao;
+}
+
+function aplicarTemaAgencia() {
+  const corPrimaria = corValida(
+    localStorage.getItem('corAgenciaPrimaria'),
+    '#111827'
+  );
+
+  const corSecundaria = corValida(
+    localStorage.getItem('corAgenciaSecundaria'),
+    '#38bdf8'
+  );
+
+  document.documentElement.style.setProperty('--cor-agencia', corPrimaria);
+  document.documentElement.style.setProperty(
+    '--cor-agencia-secundaria',
+    corSecundaria
+  );
+
+  return {
+    corPrimaria,
+    corSecundaria
+  };
+}
 
 export default function Navbar({ nomeAgencia }) {
   const navegar = useNavigate();
@@ -13,38 +51,68 @@ export default function Navbar({ nomeAgencia }) {
   const [dropdownAberto, setDropdownAberto] = useState(false);
   const [respondendoId, setRespondendoId] = useState(null);
 
-  const buscarNotificacoes = async () => {
+  const nomeExibido = useMemo(() => {
+    return nomeAgencia || localStorage.getItem('nomeAgencia') || 'Agência';
+  }, [nomeAgencia]);
+
+  const buscarNotificacoes = useCallback(async () => {
     const token = localStorage.getItem('tokenAgencia');
+
     if (!token) return;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12000);
 
     try {
       const resposta = await fetch(`${API_BASE}/api/Suporte/notificacoes`, {
         method: 'GET',
+        signal: controller.signal,
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
+
+      if (resposta.status === 401) {
+        localStorage.clear();
+        navegar('/login');
+        return;
+      }
 
       if (resposta.ok) {
         const dados = await resposta.json();
         setNotificacoes(Array.isArray(dados) ? dados : []);
       }
     } catch (erro) {
-      console.error('Erro ao buscar notificações de suporte:', erro);
+      if (erro.name !== 'AbortError') {
+        console.error('Erro ao buscar notificações de suporte:', erro);
+      }
+    } finally {
+      clearTimeout(timeout);
     }
-  };
+  }, [navegar]);
+
+  useEffect(() => {
+    aplicarTemaAgencia();
+  }, []);
 
   useEffect(() => {
     buscarNotificacoes();
 
-    // Mantém o sininho atualizado mesmo se o SignalR não estiver conectado no navegador.
-    const intervalo = setInterval(buscarNotificacoes, 5000);
+    const intervalo = setInterval(buscarNotificacoes, 15000);
+
     return () => clearInterval(intervalo);
-  }, []);
+  }, [buscarNotificacoes]);
 
   const handleSair = () => {
     localStorage.clear();
+
+    document.documentElement.style.setProperty('--cor-agencia', '#111827');
+    document.documentElement.style.setProperty(
+      '--cor-agencia-secundaria',
+      '#38bdf8'
+    );
+
     navegar('/login');
   };
 
@@ -52,6 +120,7 @@ export default function Navbar({ nomeAgencia }) {
     if (!valor) return '';
 
     const data = new Date(valor);
+
     if (Number.isNaN(data.getTime())) return '';
 
     return data.toLocaleString('pt-BR', {
@@ -65,6 +134,7 @@ export default function Navbar({ nomeAgencia }) {
 
   const responderNotificacao = async (id) => {
     const token = localStorage.getItem('tokenAgencia');
+
     if (!token) return;
 
     try {
@@ -73,14 +143,16 @@ export default function Navbar({ nomeAgencia }) {
       const resposta = await fetch(`${API_BASE}/api/Suporte/responder/${id}`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ resposta: RESPOSTA_PADRAO_AGENCIA })
       });
 
       if (resposta.ok) {
-        setNotificacoes((listaAtual) => listaAtual.filter((item) => item.id !== id));
+        setNotificacoes((listaAtual) =>
+          listaAtual.filter((item) => item.id !== id)
+        );
       } else {
         const texto = await resposta.text();
         alert(texto || 'Não foi possível responder a notificação.');
@@ -96,25 +168,38 @@ export default function Navbar({ nomeAgencia }) {
   return (
     <nav className="navbar-container">
       <div className="navbar-logo">
-        <Link to="/painel" className="navbar-link-logo"> MOTO-TAXI THALES</Link>
+        <Link to="/painel" className="navbar-link-logo">
+          <h1>{nomeExibido}</h1>
+        </Link>
       </div>
-      
+
       <div className="navbar-menu">
-        <Link to="/painel" className="navbar-link"> Operar</Link>
-        <Link to="/motoristas" className="navbar-link"> Frota</Link>
-        <Link to="/financeiro" className="navbar-link"> Financeiro</Link>
+        <Link to="/painel" className="navbar-link">
+          Operar
+        </Link>
+
+        <Link to="/motoristas" className="navbar-link">
+          Frota
+        </Link>
+
+        <Link to="/financeiro" className="navbar-link">
+          Financeiro
+        </Link>
       </div>
 
       <div className="navbar-direita">
-        <div className="navbar-notificacao" onClick={() => setDropdownAberto((aberto) => !aberto)}>
-          <svg 
-            xmlns="http://www.w3.org/2000/svg" 
-            viewBox="0 0 24 24" 
-            fill="none" 
-            stroke="currentColor" 
-            strokeWidth="2" 
-            strokeLinecap="round" 
-            strokeLinejoin="round" 
+        <div
+          className="navbar-notificacao"
+          onClick={() => setDropdownAberto((aberto) => !aberto)}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
             className="navbar-sino-svg"
           >
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
@@ -126,10 +211,20 @@ export default function Navbar({ nomeAgencia }) {
           )}
 
           {dropdownAberto && (
-            <div className="navbar-dropdown-notificacoes" onClick={(e) => e.stopPropagation()}>
+            <div
+              className="navbar-dropdown-notificacoes"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="navbar-dropdown-cabecalho">
                 <strong>Suporte técnico</strong>
-                <button type="button" onClick={buscarNotificacoes} className="navbar-botao-atualizar">Atualizar</button>
+
+                <button
+                  type="button"
+                  onClick={buscarNotificacoes}
+                  className="navbar-botao-atualizar"
+                >
+                  Atualizar
+                </button>
               </div>
 
               {notificacoes.length === 0 ? (
@@ -162,7 +257,9 @@ export default function Navbar({ nomeAgencia }) {
                         onClick={() => responderNotificacao(item.id)}
                         disabled={respondendoId === item.id}
                       >
-                        {respondendoId === item.id ? 'Enviando...' : 'Responder padrão'}
+                        {respondendoId === item.id
+                          ? 'Enviando...'
+                          : 'Responder padrão'}
                       </button>
                     </div>
                   ))}
@@ -171,9 +268,14 @@ export default function Navbar({ nomeAgencia }) {
             </div>
           )}
         </div>
-        
-        <span className="navbar-usuario">Olá, <strong>{nomeAgencia}</strong></span>
-        <button onClick={handleSair} className="botao-sair-navbar">Sair</button>
+
+        <span className="navbar-usuario">
+          Olá, <strong>{nomeExibido}</strong>
+        </span>
+
+        <button onClick={handleSair} className="botao-sair-navbar">
+          Sair
+        </button>
       </div>
     </nav>
   );

@@ -4,34 +4,102 @@ import './Login.css';
 
 const API_BASE = 'https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net';
 
+function corValida(valor, corPadrao) {
+  if (typeof valor !== 'string') return corPadrao;
+
+  const cor = valor.trim();
+
+  if (!cor || cor.toLowerCase() === 'null' || cor.toLowerCase() === 'undefined') {
+    return corPadrao;
+  }
+
+  const ehHexadecimal = /^#([0-9A-F]{3}|[0-9A-F]{6})$/i.test(cor);
+
+  return ehHexadecimal ? cor : corPadrao;
+}
+
+function pegarCampo(objeto, ...nomes) {
+  for (const nome of nomes) {
+    if (objeto && objeto[nome] !== undefined && objeto[nome] !== null) {
+      return objeto[nome];
+    }
+  }
+
+  return undefined;
+}
+
 function aplicarTemaAgencia(corPrimaria, corSecundaria) {
-  document.documentElement.style.setProperty('--cor-agencia', corPrimaria || '#111827');
-  document.documentElement.style.setProperty('--cor-agencia-secundaria', corSecundaria || '#38bdf8');
+  document.documentElement.style.setProperty(
+    '--cor-agencia',
+    corPrimaria || '#111827'
+  );
+
+  document.documentElement.style.setProperty(
+    '--cor-agencia-secundaria',
+    corSecundaria || '#38bdf8'
+  );
 }
 
 function salvarPerfilAgencia(dados) {
-  const agencia = dados?.agencia || {};
+  const agencia = dados?.agencia || dados?.Agencia || {};
 
-  const idAgencia = agencia.id || dados.agenciaId || '';
-  const nomeAgencia = agencia.nome || dados.nome || 'Agência';
+  const idAgencia =
+    pegarCampo(agencia, 'id', 'Id') ||
+    pegarCampo(dados, 'agenciaId', 'AgenciaId') ||
+    '';
 
-  // Aceita tanto o formato novo: dados.agencia.corPrimaria
-  // quanto um formato mais simples: dados.corPrimaria
-  const corPrimaria = agencia.corPrimaria || dados.corPrimaria || '#111827';
-  const corSecundaria = agencia.corSecundaria || dados.corSecundaria || '#38bdf8';
-  const logoUrl = agencia.logoUrl || dados.logoUrl || '';
+  const nomeAgencia =
+    pegarCampo(agencia, 'nome', 'Nome') ||
+    pegarCampo(dados, 'nome', 'Nome') ||
+    'Agência';
 
-  localStorage.setItem('tokenAgencia', dados.token);
+  const corPrimariaRecebida =
+    pegarCampo(agencia, 'corPrimaria', 'CorPrimaria') ||
+    pegarCampo(dados, 'corPrimaria', 'CorPrimaria');
+
+  const corSecundariaRecebida =
+    pegarCampo(agencia, 'corSecundaria', 'CorSecundaria') ||
+    pegarCampo(dados, 'corSecundaria', 'CorSecundaria');
+
+  const corPrimaria = corValida(corPrimariaRecebida, '#111827');
+  const corSecundaria = corValida(corSecundariaRecebida, '#38bdf8');
+
+  const logoUrl =
+    pegarCampo(agencia, 'logoUrl', 'LogoUrl') ||
+    pegarCampo(dados, 'logoUrl', 'LogoUrl') ||
+    '';
+
+  const telefoneWhatsApp =
+    pegarCampo(agencia, 'telefoneWhatsApp', 'TelefoneWhatsApp') ||
+    pegarCampo(dados, 'telefoneWhatsApp', 'TelefoneWhatsApp') ||
+    '';
+
+  localStorage.setItem('tokenAgencia', dados.token || dados.Token);
   localStorage.setItem('idAgencia', String(idAgencia));
   localStorage.setItem('nomeAgencia', nomeAgencia);
   localStorage.setItem('corAgenciaPrimaria', corPrimaria);
   localStorage.setItem('corAgenciaSecundaria', corSecundaria);
-
-  // Mantive as duas chaves para compatibilidade com arquivos antigos e novos.
   localStorage.setItem('logoAgencia', logoUrl);
   localStorage.setItem('logoAgenciaUrl', logoUrl);
+  localStorage.setItem('telefoneAgencia', telefoneWhatsApp);
 
   aplicarTemaAgencia(corPrimaria, corSecundaria);
+
+  console.log('[LOGIN] Resposta completa da API:', dados);
+  console.log('[LOGIN] Agência salva:', {
+    idAgencia,
+    nomeAgencia,
+    corPrimaria,
+    corSecundaria,
+    logoUrl,
+    telefoneWhatsApp
+  });
+
+  if (!corPrimariaRecebida || !corSecundariaRecebida) {
+    console.warn(
+      '[LOGIN] Atenção: a API não retornou corPrimaria/corSecundaria. O frontend usou cores padrão.'
+    );
+  }
 }
 
 export default function Login() {
@@ -64,6 +132,7 @@ export default function Login() {
       });
 
       const textoResposta = await resposta.text();
+
       let dados = {};
 
       try {
@@ -77,13 +146,17 @@ export default function Login() {
         return;
       }
 
-      if (!dados.token) {
+      const token = dados.token || dados.Token;
+
+      if (!token) {
         alert('A API respondeu sem token. Verifique o retorno da rota de login.');
+        console.error('[LOGIN] Resposta sem token:', dados);
         return;
       }
 
       salvarPerfilAgencia(dados);
-      navegar('/painel');
+
+      navegar('/painel', { replace: true });
     } catch (erro) {
       console.error('Erro na comunicação com a API:', erro);
       alert('Não foi possível conectar ao servidor.');
@@ -107,6 +180,7 @@ export default function Login() {
         <div className="login-card">
           <div className="login-header">
             <h1 className="login-title">Acesso da Agência</h1>
+
             <p className="login-subtitle">
               Entre para carregar o painel personalizado do seu ponto.
             </p>
@@ -114,7 +188,10 @@ export default function Login() {
 
           <form onSubmit={handleLogin} className="login-form">
             <div className="input-group">
-              <label className="input-label" htmlFor="telefone">Telefone da Agência</label>
+              <label className="input-label" htmlFor="telefone">
+                Telefone da Agência
+              </label>
+
               <input
                 id="telefone"
                 type="text"
@@ -127,7 +204,10 @@ export default function Login() {
             </div>
 
             <div className="input-group">
-              <label className="input-label" htmlFor="senha">Senha</label>
+              <label className="input-label" htmlFor="senha">
+                Senha
+              </label>
+
               <input
                 id="senha"
                 type="password"

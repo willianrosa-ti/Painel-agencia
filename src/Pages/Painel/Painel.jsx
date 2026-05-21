@@ -99,7 +99,7 @@ export default function Painel() {
     setNomeAgencia(nomeSalvo || 'Agência');
     buscarTudo();
 
-    const intervalo = setInterval(buscarTudo, 5000);
+    const intervalo = setInterval(buscarTudo, 15000);
     return () => clearInterval(intervalo);
   }, [buscarTudo, navegar]);
 
