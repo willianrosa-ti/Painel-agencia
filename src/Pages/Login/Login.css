@@ -1,23 +1,73 @@
 :root {
-  --cor-mil-lin-fundo: #111827;
+  --cor-mil-lin-fundo: #1f2937;
+  --cor-mil-lin-fundo-profundo: #111827;
   --cor-mil-lin-destaque: #38bdf8;
   --cor-mil-lin-texto: #1f2937;
 }
 
 .login-container {
   min-height: 100vh;
-  background: radial-gradient(circle at top, #1f2937 0%, var(--cor-mil-lin-fundo) 55%, #030712 100%);
+  background: #1f2937;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
+  padding: 1.5rem;
   font-family: sans-serif;
+}
+
+.login-shell {
+  width: 100%;
+  max-width: 28rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.mil-lin-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.mil-lin-logo__nome {
+  color: #ffffff;
+  font-size: clamp(2rem, 6vw, 4.4rem);
+  font-weight: 900;
+  letter-spacing: 0.28em;
+  line-height: 1;
+  margin-bottom: 2.3rem;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.mil-lin-logo__icone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.mil-lin-logo__tela {
+  width: 12.5rem;
+  height: 5.85rem;
+  background-color: #ffffff;
+  border-radius: 0.9rem;
+  box-shadow: 0 16px 32px rgba(3, 7, 18, 0.25);
+}
+
+.mil-lin-logo__base {
+  width: 13.45rem;
+  height: 1.9rem;
+  background-color: #ffffff;
+  border-radius: 0 999px 999px 999px;
+  margin-top: 0.28rem;
+  margin-left: 2rem;
+  box-shadow: 0 14px 28px rgba(3, 7, 18, 0.22);
 }
 
 .login-card {
   background-color: #ffffff;
   width: 100%;
-  max-width: 28rem;
   border-radius: 1.6rem;
   padding: 2rem;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
@@ -32,43 +82,6 @@
   align-items: center;
   margin-bottom: 2rem;
   text-align: center;
-}
-
-.mil-lin-logo {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.85rem;
-  margin-bottom: 1.25rem;
-}
-
-.mil-lin-logo__nome {
-  color: var(--cor-mil-lin-fundo);
-  font-size: 1.45rem;
-  font-weight: 900;
-  letter-spacing: 0.18em;
-}
-
-.mil-lin-logo__icone {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.mil-lin-logo__tela {
-  width: 5.4rem;
-  height: 3rem;
-  background: linear-gradient(135deg, var(--cor-mil-lin-fundo), #374151);
-  border-radius: 0.65rem;
-  box-shadow: 0 0 0 3px #e5e7eb, 0 10px 22px rgba(56, 189, 248, 0.25);
-}
-
-.mil-lin-logo__base {
-  width: 6rem;
-  height: 0.85rem;
-  background-color: var(--cor-mil-lin-fundo);
-  border-radius: 0 999px 999px 999px;
-  margin-top: 0.22rem;
 }
 
 .login-title {
@@ -129,7 +142,7 @@
 .btn-submit {
   display: block;
   width: 100%;
-  background-color: var(--cor-mil-lin-fundo);
+  background-color: var(--cor-mil-lin-fundo-profundo);
   color: #ffffff;
   font-weight: 800;
   padding: 0.85rem 1rem;
@@ -148,4 +161,26 @@
 .btn-submit:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+@media (max-width: 520px) {
+  .mil-lin-logo__nome {
+    letter-spacing: 0.18em;
+    margin-bottom: 1.6rem;
+  }
+
+  .mil-lin-logo__tela {
+    width: 9.6rem;
+    height: 4.65rem;
+  }
+
+  .mil-lin-logo__base {
+    width: 10.4rem;
+    height: 1.45rem;
+    margin-left: 1.5rem;
+  }
+
+  .login-card {
+    padding: 1.5rem;
+  }
 }

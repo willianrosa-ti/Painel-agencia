@@ -1,3 +1,8 @@
+:root {
+  --cor-agencia: #111827;
+  --cor-agencia-secundaria: #38bdf8;
+}
+
 .financeiro-fundo {
   min-height: 100vh;
   background-color: #f3f4f6;

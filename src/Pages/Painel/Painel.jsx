@@ -95,8 +95,8 @@ export default function Painel() {
       return;
     }
 
-    setNomeAgencia(nomeSalvo || '');
     aplicarTemaAgencia();
+    setNomeAgencia(nomeSalvo || 'Agência');
     buscarTudo();
 
     const intervalo = setInterval(buscarTudo, 5000);

@@ -1,4 +1,8 @@
-/* Classes anteriores já existentes mantidas... */
+:root {
+  --cor-agencia: #111827;
+  --cor-agencia-secundaria: #38bdf8;
+}
+
 .painel-fundo {
   min-height: 100vh;
   background-color: #f3f4f6;
@@ -27,7 +31,7 @@
 }
 
 .painel-saudacao {
-    font-size: 1.5rem;
+  font-size: 1.5rem;
 }
 
 .botao-sair {
@@ -54,8 +58,6 @@
   max-width: 600px;
 }
 
-/* --- NOVAS CLASSES EXTRAÍDAS DO JSX --- */
-
 .painel-conteudo {
   padding: 2rem;
   display: flex;
@@ -80,6 +82,7 @@
   flex: 2;
   min-width: 350px;
   border-top: 4px solid var(--cor-agencia, #111827);
+  box-shadow: 0 -3px 0 var(--cor-agencia, #111827), 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 }
 
 .titulo-verde {
@@ -136,12 +139,16 @@
 
 .botao-despachar {
   padding: 1rem;
-  background-color: var(--cor-agencia, #111827);
+  background-color: var(--cor-agencia-secundaria, #38bdf8);
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   font-weight: bold;
+}
+
+.botao-despachar:hover:not(:disabled) {
+  filter: brightness(0.95);
 }
 
 .cartao-radar {
@@ -202,28 +209,6 @@
   font-weight: bold;
 }
 
-/* Lógica de cor dos badges (crachás) de status baseada na formatação da string do React */
-.badge-status {
-  padding: 5px 10px;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  font-weight: bold;
-  color: white;
-}
-
-.status-pendente {
-  background-color: #ffc107;
-}
-
-.status-em-andamento {
-  background-color: #17a2b8;
-}
-
-.status-concluida {
-  background-color: var(--cor-agencia, #111827);
-}
-
-/* --- STATUS BADGES --- */
 .badge-status {
   padding: 5px 10px;
   border-radius: 12px;
@@ -232,15 +217,41 @@
   color: white;
 }
 
-.status-pendente { background-color: #ffc107; color: #333; } /* Amarelo */
-.status-em-andamento { background-color: #007bff; } /* Azul */
-.status-concluida { background-color: var(--cor-agencia, #111827); } /* Verde - PARA O STATUS CONCLUÍDA */
-.status-cancelada { background-color: #dc3545; } /* Vermelho */
+.status-pendente {
+  background-color: #ffc107;
+  color: #333;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: bold;
+}
 
-/* --- CORES DO RESUMO --- */
-.texto-laranja { color: #d39e00; }
-.texto-azul { color: #007bff; }
-.texto-verde { color: var(--cor-agencia, #111827); }
+.status-em-andamento {
+  background-color: #007bff;
+}
+
+.status-concluida {
+  background-color: var(--cor-agencia, #111827);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.status-cancelada {
+  background-color: #dc3545;
+}
+
+.texto-laranja {
+  color: #d39e00;
+}
+
+.texto-azul {
+  color: #007bff;
+}
+
+.texto-verde {
+  color: var(--cor-agencia, #111827);
+}
 
 .lista-resumo {
   display: flex;
@@ -257,24 +268,6 @@
   font-size: 1.1rem;
 }
 
-/* Cor para o status Concluída na tabela */
-.status-concluida {
-  background-color: var(--cor-agencia, #111827);
-  color: white;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-weight: bold;
-}
-
-/* Cor para o status Pendente na tabela */
-.status-pendente {
-  background-color: #ffc107;
-  color: #333;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-weight: bold;
-}
-/* --- AJUSTES FINAIS: valor personalizado, direcionamento e filtro do radar --- */
 .grupo-radio-valor-expandido {
   flex-wrap: wrap;
   gap: 1rem;
@@ -343,10 +336,6 @@
 .item-resumo strong {
   min-width: 48px;
   text-align: right;
-}
-
-.status-em-andamento {
-  background-color: #007bff;
 }
 
 @media (max-width: 768px) {

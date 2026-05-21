@@ -4,21 +4,13 @@ import './Financeiro.css';
 
 const API_BASE = 'https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net';
 
-function aplicarTemaAgencia() {
-  const corPrimaria = localStorage.getItem('corAgenciaPrimaria') || '#111827';
-  const corSecundaria = localStorage.getItem('corAgenciaSecundaria') || '#38bdf8';
-
-  document.documentElement.style.setProperty('--cor-agencia', corPrimaria);
-  document.documentElement.style.setProperty('--cor-agencia-secundaria', corSecundaria);
-}
-
 const mesesDoAno = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
 ];
 
 export default function Financeiro() {
-  const nomeAgencia = localStorage.getItem('nomeAgencia');
+  const nomeAgencia = localStorage.getItem('nomeAgencia') || 'Agência';
 
   const dataAtual = new Date();
   const [periodo, setPeriodo] = useState('Diario');
@@ -49,8 +41,6 @@ export default function Financeiro() {
   };
 
   useEffect(() => {
-    aplicarTemaAgencia();
-
     const buscarDadosFinanceiros = async () => {
       const token = localStorage.getItem('tokenAgencia');
       try {
@@ -150,7 +140,7 @@ export default function Financeiro() {
             </div>
 
             <div className="cartao-financeiro cartao-destaque-azul">
-              <h3 style={{ color: '#007bff', marginTop: 0, fontWeight: 'bold' }}> Volume de Corridas</h3>
+              <h3 style={{ color: 'var(--cor-agencia-secundaria, #38bdf8)', marginTop: 0, fontWeight: 'bold' }}> Volume de Corridas</h3>
               <p style={{ color: '#666', fontSize: '0.9rem' }}>Referência: {dadosFinanceiros.referencia || referenciaTela}</p>
               <div style={{ fontSize: '2.5rem', fontWeight: 'bold', margin: '1rem 0' }}>
                 {dadosFinanceiros.totalCorridas}
