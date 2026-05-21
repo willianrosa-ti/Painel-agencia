@@ -46,6 +46,7 @@ export default function Painel() {
   const [valorPersonalizado, setValorPersonalizado] = useState('');
   const [motoristaExclusivoId, setMotoristaExclusivoId] = useState('');
   const [enviandoCorrida, setEnviandoCorrida] = useState(false);
+  const [cancelandoCorridaId, setCancelandoCorridaId] = useState(null);
 
   const valorCorrida = useMemo(() => {
     if (tipoValor === 'custom') {
@@ -99,7 +100,7 @@ export default function Painel() {
     setNomeAgencia(nomeSalvo || 'Agência');
     buscarTudo();
 
-    const intervalo = setInterval(buscarTudo, 15000);
+    const intervalo = setInterval(buscarTudo, 5000);
     return () => clearInterval(intervalo);
   }, [buscarTudo, navegar]);
 
@@ -170,9 +171,48 @@ export default function Painel() {
     }
   };
 
+  const handleCancelarCorrida = async (corrida) => {
+    if (!corrida || corrida.status === 'Concluída' || corrida.status === 'Cancelada') return;
+
+    const confirmou = window.confirm(`Tem certeza que deseja cancelar a corrida do passageiro ${corrida.passageiro}?`);
+    if (!confirmou) return;
+
+    const token = localStorage.getItem('tokenAgencia');
+    setCancelandoCorridaId(corrida.id);
+
+    try {
+      const resposta = await fetch(`${API_BASE}/api/Corrida/cancelar/${corrida.id}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      const textoResposta = await resposta.text();
+
+      if (!resposta.ok) {
+        let mensagemErro = textoResposta;
+        try {
+          mensagemErro = JSON.parse(textoResposta).mensagem || mensagemErro;
+        } catch {}
+        alert(`Erro ao cancelar corrida: ${mensagemErro}`);
+        return;
+      }
+
+      alert('Corrida cancelada com sucesso!');
+      buscarTudo();
+    } catch (erro) {
+      console.error('Erro ao cancelar corrida:', erro);
+      alert('Erro de conexão ao cancelar corrida.');
+    } finally {
+      setCancelandoCorridaId(null);
+    }
+  };
+
   const qtdEmAndamento = corridasAtivas.filter((c) => c.status === 'Em Andamento').length;
   const qtdConcluidas = corridasAtivas.filter((c) => c.status === 'Concluída').length;
   const qtdPendentes = corridasAtivas.filter((c) => c.status === 'Pendente').length;
+  const qtdCanceladas = corridasAtivas.filter((c) => c.status === 'Cancelada').length;
   const motoristasDisponiveisParaDirecionar = frota.filter((m) => !m.suspenso);
 
   return (
@@ -190,6 +230,7 @@ export default function Painel() {
               <li className="item-resumo texto-laranja"><span>Pendentes:</span> <strong>{qtdPendentes}</strong></li>
               <li className="item-resumo texto-azul"><span>Em Andamento:</span> <strong>{qtdEmAndamento}</strong></li>
               <li className="item-resumo texto-verde"><span>Concluídas:</span> <strong>{qtdConcluidas}</strong></li>
+              <li className="item-resumo texto-vermelho"><span>Canceladas:</span> <strong>{qtdCanceladas}</strong></li>
             </ul>
           ) : (
             <p>CARREGANDO...</p>
@@ -275,6 +316,7 @@ export default function Painel() {
                   <th>Valor</th>
                   <th>Motorista</th>
                   <th>Status</th>
+                  <th>Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -294,6 +336,20 @@ export default function Painel() {
                       <span className={`badge-status status-${normalizarStatusParaClasse(c.status)}`}>
                         {c.status}
                       </span>
+                    </td>
+                    <td>
+                      {c.status !== 'Concluída' && c.status !== 'Cancelada' ? (
+                        <button
+                          type="button"
+                          className="botao-cancelar-corrida"
+                          onClick={() => handleCancelarCorrida(c)}
+                          disabled={cancelandoCorridaId === c.id}
+                        >
+                          {cancelandoCorridaId === c.id ? 'Cancelando...' : 'Cancelar'}
+                        </button>
+                      ) : (
+                        <span className="texto-acao-indisponivel">—</span>
+                      )}
                     </td>
                   </tr>
                 ))}

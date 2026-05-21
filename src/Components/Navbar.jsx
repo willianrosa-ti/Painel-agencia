@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import './Navbar.css';
 
@@ -50,6 +50,7 @@ export default function Navbar({ nomeAgencia }) {
   const [notificacoes, setNotificacoes] = useState([]);
   const [dropdownAberto, setDropdownAberto] = useState(false);
   const [respondendoId, setRespondendoId] = useState(null);
+  const notificacaoRef = useRef(null);
 
   const nomeExibido = useMemo(() => {
     return nomeAgencia || localStorage.getItem('nomeAgencia') || 'Agência';
@@ -103,6 +104,25 @@ export default function Navbar({ nomeAgencia }) {
 
     return () => clearInterval(intervalo);
   }, [buscarNotificacoes]);
+
+
+  useEffect(() => {
+    if (!dropdownAberto) return;
+
+    const fecharAoClicarFora = (evento) => {
+      if (notificacaoRef.current && !notificacaoRef.current.contains(evento.target)) {
+        setDropdownAberto(false);
+      }
+    };
+
+    document.addEventListener('mousedown', fecharAoClicarFora);
+    document.addEventListener('touchstart', fecharAoClicarFora);
+
+    return () => {
+      document.removeEventListener('mousedown', fecharAoClicarFora);
+      document.removeEventListener('touchstart', fecharAoClicarFora);
+    };
+  }, [dropdownAberto]);
 
   const handleSair = () => {
     localStorage.clear();
@@ -189,6 +209,7 @@ export default function Navbar({ nomeAgencia }) {
 
       <div className="navbar-direita">
         <div
+          ref={notificacaoRef}
           className="navbar-notificacao"
           onClick={() => setDropdownAberto((aberto) => !aberto)}
         >

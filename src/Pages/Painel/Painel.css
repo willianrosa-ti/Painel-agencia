@@ -200,7 +200,7 @@
 }
 
 .motorista-buscando {
-  color: #ffc107;
+  color: #050503;
   font-weight: bolder;
 }
 
@@ -230,7 +230,7 @@
 }
 
 .status-concluida {
-  background-color: var(--cor-agencia, #111827);
+  background-color:#02a734;
   color: white;
   padding: 4px 8px;
   border-radius: 4px;
@@ -250,7 +250,7 @@
 }
 
 .texto-verde {
-  color: var(--cor-agencia, #111827);
+  color: #02a734;
 }
 
 .lista-resumo {
@@ -359,4 +359,33 @@
     width: 100%;
     box-sizing: border-box;
   }
+}
+
+.texto-vermelho {
+  color: #dc3545;
+}
+
+.botao-cancelar-corrida {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 7px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 0.85rem;
+}
+
+.botao-cancelar-corrida:hover:not(:disabled) {
+  filter: brightness(0.95);
+}
+
+.botao-cancelar-corrida:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.texto-acao-indisponivel {
+  color: #9ca3af;
+  font-weight: bold;
 }

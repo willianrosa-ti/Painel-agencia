@@ -145,7 +145,7 @@
 }
 
 .botao-acao.editar {
-  background-color: var(--cor-agencia, #111827);
+  background-color: #007bff;
 }
 
 .botao-acao.suspender {
@@ -154,7 +154,7 @@
 }
 
 .botao-acao.reativar {
-  background-color: var(--cor-agencia-secundaria, #38bdf8);
+  background-color: #02a734;
 }
 
 .botao-acao.excluir {
