@@ -1,23 +1,28 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+
 :root {
-  --cor-mil-lin-fundo: #1f2937;
-  --cor-mil-lin-fundo-profundo: #111827;
+  --cor-mil-lin-fundo: #111827;
+  --cor-mil-lin-fundo-profundo: #030712;
   --cor-mil-lin-destaque: #38bdf8;
-  --cor-mil-lin-texto: #1f2937;
+  --cor-mil-lin-texto: #111827;
+  --cor-borda: #e5e7eb;
+  --cor-texto-secundario: #6b7280;
 }
 
 .login-container {
   min-height: 100vh;
-  background: #1f2937;
+  /* Gradiente escuro sutil e profissional */
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
-  font-family: sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 .login-shell {
   width: 100%;
-  max-width: 28rem;
+  max-width: 26rem; /* Levemente mais estreito para um visual mais elegante */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -27,50 +32,79 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
 }
 
 .mil-lin-logo__nome {
   color: #ffffff;
-  font-size: clamp(2rem, 6vw, 4.4rem);
-  font-weight: 900;
-  letter-spacing: 0.28em;
+  font-size: clamp(1.75rem, 5vw, 24px);
+  font-weight: 800;
+  letter-spacing: 0.3em;
   line-height: 1;
-  margin-bottom: 2.3rem;
+  margin-bottom: 1.5rem;
   text-align: center;
   white-space: nowrap;
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-.mil-lin-logo__icone {
+/* --- Ícone de Notebook Modernizado --- */
+.notebook-icon {
   display: flex;
   flex-direction: column;
   align-items: center;
+  filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.3));
 }
 
-.mil-lin-logo__tela {
-  width: 12.5rem;
-  height: 5.85rem;
-  background-color: #ffffff;
-  border-radius: 0.9rem;
-  box-shadow: 0 16px 32px rgba(3, 7, 18, 0.25);
+.center-logo {
+  width: 120px; 
+  height: 75px;
+  background-color: #f8fafc; 
+  border: 4px solid #e2e8f0;
+  border-radius: 8px 8px 0 0; 
+  position: relative;
+  background-image: linear-gradient(135deg, #f1f5f9 50%, #e2e8f0 50%);
+  margin: 0;
 }
 
-.mil-lin-logo__base {
-  width: 13.45rem;
-  height: 1.9rem;
-  background-color: #ffffff;
-  border-radius: 0 999px 999px 999px;
-  margin-top: 0.28rem;
-  margin-left: 2rem;
-  box-shadow: 0 14px 28px rgba(3, 7, 18, 0.22);
+/* Reflexo sutil na tela */
+.center-logo::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(to bottom right, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 50%);
 }
+
+.center2-logo {
+  width: 144px; 
+  height: 12px;
+  background: #cbd5e1; 
+  border-radius: 0 0 12px 12px; 
+  box-shadow: inset 0 -3px 4px rgba(0,0,0,0.1), 0 5px 10px rgba(0,0,0,0.4);
+  position: relative;
+  z-index: 1;
+  margin: 0;
+}
+
+/* Detalhe do touchpad / abertura do notebook */
+.center2-logo::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 30px;
+  height: 4px;
+  background: #94a3b8;
+  border-radius: 2px;
+}
+/* ------------------------------------- */
 
 .login-card {
   background-color: #ffffff;
   width: 100%;
-  border-radius: 1.6rem;
-  padding: 2rem;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+  border-radius: 1.25rem;
+  padding: 2.5rem 2rem;
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.4), 0 0 1px rgba(255, 255, 255, 0.1);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -80,31 +114,31 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
   text-align: center;
 }
 
 .login-title {
   color: var(--cor-mil-lin-texto);
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   font-weight: 800;
-  letter-spacing: -0.03em;
-  margin: 0;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.5rem 0;
 }
 
 .login-subtitle {
-  color: #6b7280;
-  font-size: 0.85rem;
-  font-weight: 600;
-  line-height: 1.4;
-  margin: 0.4rem 0 0;
+  color: var(--cor-texto-secundario);
+  font-size: 0.9rem;
+  font-weight: 400;
+  line-height: 1.5;
+  margin: 0;
 }
 
 .login-form {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.75rem;
 }
 
 .input-group {
@@ -113,74 +147,106 @@
 
 .input-label {
   position: absolute;
-  top: -0.6rem;
-  left: 0.75rem;
+  top: -0.55rem;
+  left: 1rem;
   background-color: #ffffff;
-  padding: 0 0.25rem;
+  padding: 0 0.4rem;
   font-size: 0.75rem;
   font-weight: 700;
-  color: #4b5563;
+  color: var(--cor-texto-secundario);
+  transition: color 0.2s ease;
+}
+
+.input-group:focus-within .input-label {
+  color: var(--cor-mil-lin-destaque);
 }
 
 .input-field {
   width: 100%;
-  border: 2px solid #d1d5db;
-  border-radius: 0.65rem;
-  padding: 0.8rem 1rem;
+  border: 1.5px solid var(--cor-borda);
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
   font-size: 1rem;
   color: #1f2937;
+  background-color: #fafafa;
   outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: all 0.2s ease;
   box-sizing: border-box;
 }
 
+.input-field::placeholder {
+  color: #9ca3af;
+}
+
+.input-field:hover {
+  border-color: #d1d5db;
+}
+
 .input-field:focus {
+  background-color: #ffffff;
   border-color: var(--cor-mil-lin-destaque);
-  box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.16);
+  box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.15);
 }
 
 .btn-submit {
-  display: block;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   width: 100%;
-  background-color: var(--cor-mil-lin-fundo-profundo);
+  background: linear-gradient(180deg, var(--cor-mil-lin-fundo) 0%, var(--cor-mil-lin-fundo-profundo) 100%);
   color: #ffffff;
-  font-weight: 800;
-  padding: 0.85rem 1rem;
-  border-radius: 0.85rem;
-  border: none;
-  margin-top: 0.25rem;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid #030712;
+  margin-top: 0.5rem;
   cursor: pointer;
-  transition: transform 0.2s, background-color 0.2s, opacity 0.2s;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .btn-submit:hover:not(:disabled) {
-  background-color: #030712;
+  background: linear-gradient(180deg, #374151 0%, var(--cor-mil-lin-fundo) 100%);
   transform: translateY(-1px);
+  box-shadow: 0 6px 8px -1px rgba(0, 0, 0, 0.15), 0 3px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.btn-submit:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1);
 }
 
 .btn-submit:disabled {
-  opacity: 0.7;
+  background: #9ca3af;
+  border-color: #9ca3af;
+  box-shadow: none;
   cursor: not-allowed;
+  opacity: 0.7;
 }
 
 @media (max-width: 520px) {
+  .login-container {
+    padding: 1rem;
+  }
+
   .mil-lin-logo__nome {
-    letter-spacing: 0.18em;
-    margin-bottom: 1.6rem;
+    letter-spacing: 0.2em;
+    font-size: 20px;
   }
 
-  .mil-lin-logo__tela {
-    width: 9.6rem;
-    height: 4.65rem;
+  .center-logo {
+    width: 100px;
+    height: 60px;
   }
 
-  .mil-lin-logo__base {
-    width: 10.4rem;
-    height: 1.45rem;
-    margin-left: 1.5rem;
+  .center2-logo {
+    width: 120px;
+    height: 10px;
   }
 
   .login-card {
-    padding: 1.5rem;
+    padding: 2rem 1.5rem;
   }
 }

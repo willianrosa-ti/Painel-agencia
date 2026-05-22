@@ -171,10 +171,11 @@ export default function Login() {
         <div className="mil-lin-logo" aria-label="Logo M I L - L I N">
           <span className="mil-lin-logo__nome">M I L - L I N</span>
 
-          <span className="mil-lin-logo__icone">
-            <span className="mil-lin-logo__tela" />
-            <span className="mil-lin-logo__base" />
-          </span>
+          <div className="notebook-icon">
+            <div className="center-logo"></div>
+            <div className="center2-logo"></div>
+        </div>
+          
         </div>
 
         <div className="login-card">

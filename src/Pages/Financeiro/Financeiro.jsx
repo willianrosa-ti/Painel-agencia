@@ -9,6 +9,94 @@ const mesesDoAno = [
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
 ];
 
+const ehCorridaCancelada = (corrida) => {
+  return String(corrida?.status || '').trim().toLowerCase() === 'cancelada';
+};
+
+const adicionarDias = (data, quantidadeDias) => {
+  const novaData = new Date(data);
+  novaData.setDate(novaData.getDate() + quantidadeDias);
+  return novaData;
+};
+
+const obterDatasDoPeriodo = (periodo, mesSelecionado, anoSelecionado) => {
+  const hoje = new Date();
+  const datas = [];
+
+  if (periodo === 'Mensal') {
+    const ultimoDiaDoMes = new Date(anoSelecionado, mesSelecionado, 0).getDate();
+
+    for (let dia = 1; dia <= ultimoDiaDoMes; dia += 1) {
+      datas.push(new Date(anoSelecionado, mesSelecionado - 1, dia));
+    }
+
+    return datas;
+  }
+
+  if (periodo === 'Semanal') {
+    const dataInicio = adicionarDias(hoje, -7);
+
+    for (let i = 0; i <= 7; i += 1) {
+      datas.push(adicionarDias(dataInicio, i));
+    }
+
+    return datas;
+  }
+
+  return [hoje];
+};
+
+const buscarCorridasPorData = async (token, data) => {
+  const dia = data.getDate();
+  const mes = data.getMonth() + 1;
+  const ano = data.getFullYear();
+
+  const resposta = await fetch(`${API_BASE}/api/Corrida/listar-hoje?dia=${dia}&mes=${mes}&ano=${ano}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+
+  if (!resposta.ok) return [];
+
+  return await resposta.json();
+};
+
+const montarRanking = (itens, obterNome) => {
+  const mapa = new Map();
+
+  itens.forEach((item) => {
+    const nome = obterNome(item);
+
+    if (!nome) return;
+
+    mapa.set(nome, (mapa.get(nome) || 0) + 1);
+  });
+
+  return Array.from(mapa.entries())
+    .map(([nome, quantidade]) => ({ nome, quantidade }))
+    .sort((a, b) => b.quantidade - a.quantidade)
+    .slice(0, 3);
+};
+
+const montarHorariosPico = (corridas) => {
+  const mapa = new Map();
+
+  corridas.forEach((corrida) => {
+    const dataHora = new Date(corrida.dataHoraSolicitacao);
+
+    if (Number.isNaN(dataHora.getTime())) return;
+
+    const horaNumero = dataHora.getHours();
+    const hora = `${String(horaNumero).padStart(2, '0')}:00 às ${String(horaNumero + 1).padStart(2, '0')}:00`;
+
+    mapa.set(hora, (mapa.get(hora) || 0) + 1);
+  });
+
+  return Array.from(mapa.entries())
+    .map(([hora, quantidade]) => ({ hora, quantidade }))
+    .sort((a, b) => b.quantidade - a.quantidade)
+    .slice(0, 3);
+};
+
 export default function Financeiro() {
   const nomeAgencia = localStorage.getItem('nomeAgencia') || 'Agência';
 
@@ -43,6 +131,7 @@ export default function Financeiro() {
   useEffect(() => {
     const buscarDadosFinanceiros = async () => {
       const token = localStorage.getItem('tokenAgencia');
+
       try {
         const parametros = new URLSearchParams({ periodo });
 
@@ -56,7 +145,21 @@ export default function Financeiro() {
         });
 
         if (resposta.ok) {
-          setDadosFinanceiros(await resposta.json());
+          const resumoFinanceiro = await resposta.json();
+          const datasDoPeriodo = obterDatasDoPeriodo(periodo, mesSelecionado, anoSelecionado);
+          const listasDeCorridas = await Promise.all(datasDoPeriodo.map((data) => buscarCorridasPorData(token, data)));
+          const corridasDoPeriodo = listasDeCorridas.flat().filter((corrida) => !ehCorridaCancelada(corrida));
+
+          setDadosFinanceiros({
+            ...resumoFinanceiro,
+            totalCorridas: corridasDoPeriodo.length,
+            horarios: montarHorariosPico(corridasDoPeriodo),
+            motoristas: montarRanking(corridasDoPeriodo, (corrida) => {
+              if (!corrida.motorista || corrida.motorista === 'Buscando motorista...') return null;
+              return corrida.motorista;
+            }),
+            passageiros: montarRanking(corridasDoPeriodo, (corrida) => corrida.passageiro)
+          });
         }
       } catch (erro) {
         console.error('Erro ao buscar dados do financeiro:', erro);
