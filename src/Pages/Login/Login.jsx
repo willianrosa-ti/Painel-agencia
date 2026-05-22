@@ -106,14 +106,16 @@ export default function Login() {
   const [telefone, setTelefone] = useState('');
   const [senha, setSenha] = useState('');
   const [carregando, setCarregando] = useState(false);
+  const [mensagemErro, setMensagemErro] = useState('');
 
   const navegar = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setMensagemErro('');
 
     if (!telefone.trim() || !senha.trim()) {
-      alert('Informe telefone e senha para entrar.');
+      setMensagemErro('Informe telefone e senha para entrar.');
       return;
     }
 
@@ -142,14 +144,14 @@ export default function Login() {
       }
 
       if (!resposta.ok) {
-        alert(`Erro: ${dados.mensagem || 'Não foi possível realizar o login.'}`);
+        setMensagemErro(dados.mensagem || 'Não foi possível realizar o login.');
         return;
       }
 
       const token = dados.token || dados.Token;
 
       if (!token) {
-        alert('A API respondeu sem token. Verifique o retorno da rota de login.');
+        setMensagemErro('A API respondeu sem token. Verifique o retorno da rota de login.');
         console.error('[LOGIN] Resposta sem token:', dados);
         return;
       }
@@ -159,7 +161,7 @@ export default function Login() {
       navegar('/painel', { replace: true });
     } catch (erro) {
       console.error('Erro na comunicação com a API:', erro);
-      alert('Não foi possível conectar ao servidor.');
+      setMensagemErro('Não foi possível conectar ao servidor. Tente novamente em instantes.');
     } finally {
       setCarregando(false);
     }
@@ -198,7 +200,10 @@ export default function Login() {
                 type="text"
                 placeholder="(00) 00000-0000"
                 value={telefone}
-                onChange={(e) => setTelefone(e.target.value)}
+                onChange={(e) => {
+                  setTelefone(e.target.value);
+                  setMensagemErro('');
+                }}
                 className="input-field"
                 autoComplete="username"
               />
@@ -214,11 +219,20 @@ export default function Login() {
                 type="password"
                 placeholder="Digite sua senha"
                 value={senha}
-                onChange={(e) => setSenha(e.target.value)}
+                onChange={(e) => {
+                  setSenha(e.target.value);
+                  setMensagemErro('');
+                }}
                 className="input-field"
                 autoComplete="current-password"
               />
             </div>
+
+            {mensagemErro && (
+              <p className="login-message login-message--error" role="alert">
+                {mensagemErro}
+              </p>
+            )}
 
             <button type="submit" className="btn-submit" disabled={carregando}>
               {carregando ? 'ENTRANDO...' : 'ENTRAR'}

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import Navbar from '../../Components/Navbar';
+import { useFeedback } from '../../Components/Feedback/useFeedback';
 import './Motoristas.css';
 
 const API_BASE = 'https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net';
@@ -13,6 +14,7 @@ function aplicarTemaAgencia() {
 }
 
 export default function Motoristas() {
+  const { sucesso, erro: mostrarErro, aviso, confirmar } = useFeedback();
   const [frota, setFrota] = useState([]);
   const [nome, setNome] = useState('');
   const [telefone, setTelefone] = useState('');
@@ -62,7 +64,7 @@ export default function Motoristas() {
     e.preventDefault();
 
     if (!motoristaEditando && !senha.trim()) {
-      alert('Informe uma senha para o novo motorista.');
+      aviso('Informe uma senha para o novo motorista.', 'Campo obrigatório');
       return;
     }
 
@@ -90,16 +92,16 @@ export default function Motoristas() {
       });
 
       if (!res.ok) {
-        alert(await lerMensagemErro(res));
+        mostrarErro(await lerMensagemErro(res));
         return;
       }
 
-      alert(editando ? 'Motorista atualizado com sucesso!' : 'Motorista adicionado com sucesso!');
+      sucesso(editando ? 'Motorista atualizado com sucesso.' : 'Motorista adicionado com sucesso.');
       limparFormulario();
       buscarFrota();
     } catch (erro) {
       console.error('Erro ao salvar motorista:', erro);
-      alert('Erro de conexão ao salvar motorista.');
+      mostrarErro('Erro de conexão ao salvar motorista.');
     } finally {
       setSalvando(false);
     }
@@ -116,13 +118,16 @@ export default function Motoristas() {
 
   const alterarSuspensao = async (motorista) => {
     const novoStatusSuspenso = !motorista.suspenso;
-    const confirmar = window.confirm(
-      novoStatusSuspenso
+    const confirmou = await confirmar({
+      titulo: novoStatusSuspenso ? 'Suspender motorista' : 'Reativar motorista',
+      mensagem: novoStatusSuspenso
         ? `Suspender ${motorista.nome}? Ele não conseguirá entrar no app nem receber corridas.`
-        : `Reativar ${motorista.nome}? Ele voltará a poder usar o app.`
-    );
+        : `Reativar ${motorista.nome}? Ele voltará a poder usar o app.`,
+      textoConfirmar: novoStatusSuspenso ? 'Suspender' : 'Reativar',
+      tipo: novoStatusSuspenso ? 'perigo' : 'padrao'
+    });
 
-    if (!confirmar) return;
+    if (!confirmou) return;
 
     const token = localStorage.getItem('tokenAgencia');
 
@@ -137,23 +142,31 @@ export default function Motoristas() {
       });
 
       if (!res.ok) {
-        alert(await lerMensagemErro(res));
+        mostrarErro(await lerMensagemErro(res));
         return;
       }
 
+      sucesso(
+        novoStatusSuspenso
+          ? 'Motorista suspenso com sucesso.'
+          : 'Motorista reativado com sucesso.'
+      );
       buscarFrota();
     } catch (erro) {
       console.error('Erro ao alterar suspensão:', erro);
-      alert('Erro de conexão ao alterar status do motorista.');
+      mostrarErro('Erro de conexão ao alterar status do motorista.');
     }
   };
 
   const excluirMotorista = async (motorista) => {
-    const confirmar = window.confirm(
-      `Excluir ${motorista.nome} da frota?\n\nO histórico financeiro e de corridas será preservado, mas ele não aparecerá mais no painel nem conseguirá acessar o app.`
-    );
+    const confirmou = await confirmar({
+      titulo: 'Excluir motorista',
+      mensagem: `Excluir ${motorista.nome} da frota? O histórico financeiro e de corridas será preservado, mas ele não aparecerá mais no painel nem conseguirá acessar o app.`,
+      textoConfirmar: 'Excluir',
+      tipo: 'perigo'
+    });
 
-    if (!confirmar) return;
+    if (!confirmou) return;
 
     const token = localStorage.getItem('tokenAgencia');
 
@@ -164,15 +177,16 @@ export default function Motoristas() {
       });
 
       if (!res.ok) {
-        alert(await lerMensagemErro(res));
+        mostrarErro(await lerMensagemErro(res));
         return;
       }
 
       if (motoristaEditando?.id === motorista.id) limparFormulario();
+      sucesso('Motorista excluído com sucesso.');
       buscarFrota();
     } catch (erro) {
       console.error('Erro ao excluir motorista:', erro);
-      alert('Erro de conexão ao excluir motorista.');
+      mostrarErro('Erro de conexão ao excluir motorista.');
     }
   };
 

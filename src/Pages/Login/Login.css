@@ -188,6 +188,21 @@
   box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.15);
 }
 
+.login-message {
+  margin: -0.45rem 0 -0.3rem;
+  border-radius: 0.65rem;
+  padding: 0.85rem 1rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.login-message--error {
+  border: 1px solid #fecaca;
+  background-color: #fef2f2;
+  color: #b91c1c;
+}
+
 .btn-submit {
   display: flex;
   justify-content: center;

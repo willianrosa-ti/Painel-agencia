@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useFeedback } from './Feedback/useFeedback';
 import './Navbar.css';
 
 const API_BASE = 'https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net';
@@ -46,6 +47,7 @@ function aplicarTemaAgencia() {
 
 export default function Navbar({ nomeAgencia }) {
   const navegar = useNavigate();
+  const { erro: mostrarErro, sucesso: mostrarSucesso } = useFeedback();
 
   const [notificacoes, setNotificacoes] = useState([]);
   const [dropdownAberto, setDropdownAberto] = useState(false);
@@ -173,13 +175,14 @@ export default function Navbar({ nomeAgencia }) {
         setNotificacoes((listaAtual) =>
           listaAtual.filter((item) => item.id !== id)
         );
+        mostrarSucesso('A notificação foi respondida e removida da lista.');
       } else {
         const texto = await resposta.text();
-        alert(texto || 'Não foi possível responder a notificação.');
+        mostrarErro(texto || 'Não foi possível responder a notificação.');
       }
     } catch (erro) {
       console.error('Erro ao responder suporte:', erro);
-      alert('Erro de conexão ao responder a notificação.');
+      mostrarErro('Erro de conexão ao responder a notificação.');
     } finally {
       setRespondendoId(null);
     }

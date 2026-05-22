@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../Components/Navbar';
+import { useFeedback } from '../../Components/Feedback/useFeedback';
 import './Painel.css';
 
 const API_BASE = 'https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net';
@@ -30,6 +31,7 @@ function aplicarTemaAgencia() {
 }
 
 export default function Painel() {
+  const { sucesso, erro: mostrarErro, aviso, confirmar } = useFeedback();
   const [nomeAgencia, setNomeAgencia] = useState('');
   const [dadosResumo, setDadosResumo] = useState(null);
   const navegar = useNavigate();
@@ -118,7 +120,7 @@ export default function Painel() {
     e.preventDefault();
 
     if (valorCorrida <= 0) {
-      alert('Informe um valor válido para a corrida.');
+      aviso('Informe um valor válido para a corrida.', 'Valor inválido');
       return;
     }
 
@@ -150,22 +152,25 @@ export default function Painel() {
         let mensagemErro = textoResposta;
         try {
           mensagemErro = JSON.parse(textoResposta).mensagem || mensagemErro;
-        } catch {}
-        alert(`Erro ao despachar corrida: ${mensagemErro}`);
+        } catch {
+          mensagemErro = mensagemErro || 'Não foi possível despachar a corrida.';
+        }
+        mostrarErro(mensagemErro || 'Não foi possível despachar a corrida.', 'Erro ao despachar corrida');
         return;
       }
 
-      const textoWhatsApp = `🏍️ *NOVA CORRIDA*\n*Passageiro:* ${nomePassageiro}\n*Buscar em:* ${endBusca}\n*Levar para:* ${endDestino}\n*Valor:* R$ ${valorCorrida.toFixed(2)}${motoristaSelecionado ? `\n*Direcionada para:* ${motoristaSelecionado.nome}` : ''}`;
-      const linkWhatsApp = `https://web.whatsapp.com/send?text=${encodeURIComponent(textoWhatsApp)}`;
-      window.open(linkWhatsApp, 'aba_do_WhatsApp');
-
-      alert(motoristaSelecionado ? '🚀 Corrida direcionada com sucesso!' : '🚀 Corrida despachada com sucesso!');
+      
+      sucesso(
+        motoristaSelecionado
+          ? 'Corrida direcionada com sucesso.'
+          : 'Corrida despachada com sucesso.'
+      );
 
       limparFormularioCorrida();
       buscarTudo();
     } catch (erro) {
       console.error('Erro ao despachar corrida:', erro);
-      alert('Erro de conexão ao despachar corrida.');
+      mostrarErro('Erro de conexão ao despachar corrida.');
     } finally {
       setEnviandoCorrida(false);
     }
@@ -174,7 +179,13 @@ export default function Painel() {
   const handleCancelarCorrida = async (corrida) => {
     if (!corrida || corrida.status === 'Concluída' || corrida.status === 'Cancelada') return;
 
-    const confirmou = window.confirm(`Tem certeza que deseja cancelar a corrida do passageiro ${corrida.passageiro}?`);
+    const confirmou = await confirmar({
+      titulo: 'Cancelar corrida',
+      mensagem: `Tem certeza que deseja cancelar a corrida do passageiro ${corrida.passageiro}?`,
+      textoConfirmar: 'Cancelar corrida',
+      tipo: 'perigo'
+    });
+
     if (!confirmou) return;
 
     const token = localStorage.getItem('tokenAgencia');
@@ -194,16 +205,18 @@ export default function Painel() {
         let mensagemErro = textoResposta;
         try {
           mensagemErro = JSON.parse(textoResposta).mensagem || mensagemErro;
-        } catch {}
-        alert(`Erro ao cancelar corrida: ${mensagemErro}`);
+        } catch {
+          mensagemErro = mensagemErro || 'Não foi possível cancelar a corrida.';
+        }
+        mostrarErro(mensagemErro || 'Não foi possível cancelar a corrida.', 'Erro ao cancelar corrida');
         return;
       }
 
-      alert('Corrida cancelada com sucesso!');
+      sucesso('Corrida cancelada com sucesso.');
       buscarTudo();
     } catch (erro) {
       console.error('Erro ao cancelar corrida:', erro);
-      alert('Erro de conexão ao cancelar corrida.');
+      mostrarErro('Erro de conexão ao cancelar corrida.');
     } finally {
       setCancelandoCorridaId(null);
     }
