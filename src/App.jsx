@@ -4,10 +4,12 @@ import Painel from './Pages/Painel/Painel';
 import Motoristas from './Pages/Motoristas/Motoristas';
 import Financeiro from './Pages/Financeiro/Financeiro';
 import FeedbackProvider from './Components/Feedback/FeedbackProvider';
+import NativeAppSetup from './Components/NativeAppSetup';
 
 export default function App() {
   return (
     <FeedbackProvider>
+      <NativeAppSetup />
       <BrowserRouter>
         <Routes>
           {/* Rota padrão: se entrar vazio, joga pro login */}

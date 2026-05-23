@@ -6,6 +6,12 @@ import './Painel.css';
 
 const API_BASE = 'https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net';
 
+const SECOES_OPERAR = [
+  { id: 'resumo', label: 'Resumo' },
+  { id: 'nova-corrida', label: 'Nova corrida' },
+  { id: 'radar', label: 'Radar' }
+];
+
 function obterDataHojeInput() {
   const hoje = new Date();
   const ano = hoje.getFullYear();
@@ -49,6 +55,7 @@ export default function Painel() {
   const [motoristaExclusivoId, setMotoristaExclusivoId] = useState('');
   const [enviandoCorrida, setEnviandoCorrida] = useState(false);
   const [cancelandoCorridaId, setCancelandoCorridaId] = useState(null);
+  const [secaoOperarAtiva, setSecaoOperarAtiva] = useState('nova-corrida');
 
   const valorCorrida = useMemo(() => {
     if (tipoValor === 'custom') {
@@ -233,7 +240,22 @@ export default function Painel() {
       <Navbar nomeAgencia={nomeAgencia} />
 
       <main className="painel-conteudo">
-        <div className="cartao-informativo cartao-resumo">
+        <div className="painel-abas-operar" role="tablist" aria-label="Seções da operação">
+          {SECOES_OPERAR.map((secao) => (
+            <button
+              key={secao.id}
+              type="button"
+              className={`painel-aba-operar ${secaoOperarAtiva === secao.id ? 'painel-aba-operar--ativa' : ''}`}
+              onClick={() => setSecaoOperarAtiva(secao.id)}
+              role="tab"
+              aria-selected={secaoOperarAtiva === secao.id}
+            >
+              {secao.label}
+            </button>
+          ))}
+        </div>
+
+        <div className={`cartao-informativo cartao-resumo painel-secao-operar ${secaoOperarAtiva === 'resumo' ? 'painel-secao-operar--ativa' : ''}`}>
           <h3 className="label-valor">Resumo da Operação</h3>
           {dadosResumo ? (
             <ul className="lista-resumo">
@@ -250,7 +272,7 @@ export default function Painel() {
           )}
         </div>
 
-        <div className="cartao-informativo cartao-nova-corrida">
+        <div className={`cartao-informativo cartao-nova-corrida painel-secao-operar ${secaoOperarAtiva === 'nova-corrida' ? 'painel-secao-operar--ativa' : ''}`}>
           <h3 className="titulo-verde">🚀 Nova Corrida</h3>
           <form onSubmit={handleDespacharCorrida} className="formulario-corrida">
             <div className="grupo-inputs-duplo">
@@ -303,7 +325,7 @@ export default function Painel() {
           </form>
         </div>
 
-        <div className="cartao-informativo cartao-radar">
+        <div className={`cartao-informativo cartao-radar painel-secao-operar ${secaoOperarAtiva === 'radar' ? 'painel-secao-operar--ativa' : ''}`}>
           <div className="cabecalho-radar-painel">
             <h3 className="titulo-azul">📡 Radar de Corridas</h3>
             <div className="filtro-data-radar">
@@ -328,41 +350,39 @@ export default function Painel() {
                   <th>Trajeto</th>
                   <th>Valor</th>
                   <th>Motorista</th>
-                  <th>Status</th>
-                  <th>Ações</th>
+                  <th>Status / Ação</th>
                 </tr>
               </thead>
               <tbody>
                 {corridasAtivas.map((c) => (
                   <tr key={c.id}>
-                    <td><strong>{c.passageiro}</strong></td>
-                    <td className="celula-trajeto">De: {c.busca}<br />Para: {c.destino}</td>
-                    <td className="celula-valor">R$ {Number(c.valor).toFixed(2)}</td>
-                    <td>
+                    <td data-label="Passageiro"><strong>{c.passageiro}</strong></td>
+                    <td data-label="Trajeto" className="celula-trajeto">De: {c.busca}<br />Para: {c.destino}</td>
+                    <td data-label="Valor" className="celula-valor">R$ {Number(c.valor).toFixed(2)}</td>
+                    <td data-label="Motorista">
                       <span className={c.motorista === 'Buscando motorista...' || c.motorista === 'Buscando...' ? 'motorista-buscando' : 'motorista-encontrado'}>
                         {c.motorista === 'Buscando motorista...' || c.motorista === 'Buscando...'
                           ? `${c.motoristaExclusivoId ? ' ' : ' '}${c.motorista}`
                           : `🏍️ ${c.motorista}`}
                       </span>
                     </td>
-                    <td>
-                      <span className={`badge-status status-${normalizarStatusParaClasse(c.status)}`}>
-                        {c.status}
-                      </span>
-                    </td>
-                    <td>
-                      {c.status !== 'Concluída' && c.status !== 'Cancelada' ? (
-                        <button
-                          type="button"
-                          className="botao-cancelar-corrida"
-                          onClick={() => handleCancelarCorrida(c)}
-                          disabled={cancelandoCorridaId === c.id}
-                        >
-                          {cancelandoCorridaId === c.id ? 'Cancelando...' : 'Cancelar'}
-                        </button>
-                      ) : (
-                        <span className="texto-acao-indisponivel">—</span>
-                      )}
+                    <td data-label="Status / Ação" className="celula-status-acao">
+                      <div className="radar-status-acoes">
+                        <span className={`badge-status status-${normalizarStatusParaClasse(c.status)}`}>
+                          {c.status}
+                        </span>
+
+                        {c.status !== 'Concluída' && c.status !== 'Cancelada' && (
+                          <button
+                            type="button"
+                            className="botao-cancelar-corrida"
+                            onClick={() => handleCancelarCorrida(c)}
+                            disabled={cancelandoCorridaId === c.id}
+                          >
+                            {cancelandoCorridaId === c.id ? 'Cancelando...' : 'Cancelar'}
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

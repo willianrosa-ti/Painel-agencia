@@ -265,3 +265,53 @@
     padding: 2rem 1.5rem;
   }
 }
+
+@media (max-width: 380px) {
+  .login-container {
+    padding: 0.75rem;
+  }
+
+  .mil-lin-logo {
+    margin-bottom: 1.5rem;
+  }
+
+  .mil-lin-logo__nome {
+    font-size: 18px;
+    letter-spacing: 0.16em;
+  }
+
+  .center-logo {
+    width: 88px;
+    height: 54px;
+  }
+
+  .center2-logo {
+    width: 106px;
+  }
+
+  .login-card {
+    border-radius: 1rem;
+    padding: 1.5rem 1rem;
+  }
+
+  .login-header {
+    margin-bottom: 1.6rem;
+  }
+
+  .login-title {
+    font-size: 1.25rem;
+  }
+
+  .login-form {
+    gap: 1.35rem;
+  }
+
+  .input-field {
+    padding: 0.9rem;
+    font-size: 0.95rem;
+  }
+
+  .btn-submit {
+    padding: 0.9rem;
+  }
+}

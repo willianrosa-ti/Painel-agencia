@@ -178,3 +178,153 @@
     white-space: nowrap;
   }
 }
+
+@media (max-width: 760px) {
+  .motoristas-container {
+    padding: 1rem;
+  }
+
+  .motoristas-titulo {
+    font-size: 1.25rem;
+    line-height: 1.35;
+  }
+
+  .cartao-adicionar-motorista {
+    padding: 1rem;
+  }
+
+  .cabecalho-form-motorista {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .botao-cancelar-edicao,
+  .botao-cadastrar-motorista {
+    min-height: 44px;
+  }
+
+  .tabela-motoristas,
+  .tabela-motoristas tbody,
+  .tabela-motoristas tr,
+  .tabela-motoristas td {
+    display: block;
+    width: 100%;
+    white-space: normal;
+  }
+
+  .tabela-motoristas {
+    overflow: visible;
+    background-color: transparent;
+    box-shadow: none;
+  }
+
+  .tabela-motoristas thead {
+    display: none;
+  }
+
+  .linha-tabela-motorista {
+    margin-bottom: 0.85rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background-color: #ffffff;
+    box-shadow: 0 6px 14px rgba(15, 23, 42, 0.06);
+    overflow: hidden;
+    text-align: left;
+  }
+
+  .linha-tabela-motorista td {
+    display: grid;
+    grid-template-columns: 6.5rem minmax(0, 1fr);
+    gap: 0.75rem;
+    align-items: center;
+    border-bottom: 1px solid #f1f5f9;
+    padding: 0.75rem;
+  }
+
+  .linha-tabela-motorista td:last-child {
+    border-bottom: none;
+  }
+
+  .linha-tabela-motorista td::before {
+    content: attr(data-label);
+    color: #6b7280;
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .acoes-motorista {
+    justify-content: stretch;
+  }
+
+  .botao-acao {
+    flex: 1 1 30%;
+    min-height: 40px;
+  }
+
+  .celula-vazia {
+    border-radius: 8px;
+    background-color: #ffffff;
+  }
+}
+
+@media (max-width: 420px) {
+  .linha-tabela-motorista td {
+    grid-template-columns: 1fr;
+    gap: 0.3rem;
+  }
+
+  .botao-acao {
+    flex-basis: 100%;
+  }
+}
+
+@media (max-width: 380px) {
+  .motoristas-container {
+    padding: 0.65rem;
+  }
+
+  .motoristas-titulo {
+    margin-bottom: 0.9rem;
+    font-size: 1.08rem;
+  }
+
+  .cartao-adicionar-motorista {
+    margin-bottom: 1rem;
+    padding: 0.85rem;
+  }
+
+  .cabecalho-form-motorista h3 {
+    font-size: 1rem;
+  }
+
+  .input-motorista {
+    min-width: 0;
+    padding: 0.72rem;
+    font-size: 0.92rem;
+  }
+
+  .linha-tabela-motorista {
+    margin-bottom: 0.7rem;
+  }
+
+  .linha-tabela-motorista td {
+    padding: 0.6rem;
+    font-size: 0.9rem;
+    overflow-wrap: anywhere;
+  }
+
+  .linha-tabela-motorista td::before {
+    font-size: 0.72rem;
+  }
+
+  .botao-acao {
+    min-height: 38px;
+    padding: 0.6rem 0.7rem;
+    font-size: 0.78rem;
+  }
+
+  .celula-vazia {
+    padding: 1.25rem;
+  }
+}

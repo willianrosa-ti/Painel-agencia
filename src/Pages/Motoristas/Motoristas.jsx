@@ -243,25 +243,25 @@ export default function Motoristas() {
             ) : (
               frota.map((m) => (
                 <tr key={m.id} className="linha-tabela-motorista">
-                  <td className="celula-id">#{m.id}</td>
-                  <td>{m.nome}</td>
-                  <td>{m.telefone}</td>
-                  <td>{m.placaMoto}</td>
-                  <td>
+                  <td data-label="ID" className="celula-id">#{m.id}</td>
+                  <td data-label="Nome">{m.nome}</td>
+                  <td data-label="Telefone">{m.telefone}</td>
+                  <td data-label="Placa">{m.placaMoto}</td>
+                  <td data-label="Status">
                     {m.suspenso ? (
                       <span className="status-motorista-suspenso">● Suspenso</span>
                     ) : (
                       <span className="status-motorista-ativo">● Ativo</span>
                     )}
                   </td>
-                  <td>
+                  <td data-label="Online">
                     {m.online ? (
                       <span className="status-motorista-online">● Online</span>
                     ) : (
                       <span className="status-motorista-offline">● Offline</span>
                     )}
                   </td>
-                  <td>
+                  <td data-label="Ações">
                     <div className="acoes-motorista">
                       <button type="button" className="botao-acao editar" onClick={() => iniciarEdicao(m)}>Editar</button>
                       <button type="button" className={m.suspenso ? 'botao-acao reativar' : 'botao-acao suspender'} onClick={() => alterarSuspensao(m)}>

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Notebook MIL-LIN">
+  <rect width="64" height="64" rx="14" fill="#111827"/>
+  <g filter="url(#shadow)">
+    <rect x="15" y="18" width="34" height="24" rx="4" fill="#ffffff"/>
+    <path d="M15 18h34L15 42z" fill="#e5e7eb" opacity="0.65"/>
+    <path d="M10 44h44l-4 7H14z" fill="#ffffff"/>
+    <path d="M25 46h14" stroke="#d1d5db" stroke-width="2" stroke-linecap="round"/>
+  </g>
+  <defs>
+    <filter id="shadow" x="2" y="12" width="60" height="48" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#020617" flood-opacity="0.45"/>
+      <feDropShadow dx="0" dy="0" stdDeviation="2" flood-color="#d6eaf8" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+</svg>

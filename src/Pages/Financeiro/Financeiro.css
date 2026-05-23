@@ -129,6 +129,10 @@
 }
 
 @media (max-width: 768px) {
+  .financeiro-conteudo {
+    padding: 1rem;
+  }
+
   .cabecalho-financeiro {
     flex-direction: column;
     align-items: flex-start;
@@ -154,5 +158,97 @@
 
   .filtro-mes-financeiro select {
     flex: 1;
+  }
+}
+
+@media (max-width: 560px) {
+  .grid-financeiro {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .cartao-financeiro {
+    border-radius: 8px;
+    padding: 1rem;
+  }
+
+  .grupo-botoes-filtro {
+    gap: 0.35rem;
+    padding: 0.35rem;
+  }
+
+  .botao-filtro {
+    min-height: 40px;
+    padding: 0.5rem 0.45rem;
+  }
+
+  .filtro-mes-financeiro {
+    flex-direction: column;
+  }
+
+  .item-ranking {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .financeiro-conteudo {
+    padding: 0.65rem;
+  }
+
+  .cabecalho-financeiro {
+    margin-bottom: 1rem;
+  }
+
+  .cabecalho-financeiro h2 {
+    font-size: 1.15rem;
+  }
+
+  .subtitulo-financeiro {
+    font-size: 0.88rem;
+  }
+
+  .grid-financeiro {
+    gap: 0.75rem;
+  }
+
+  .cartao-financeiro {
+    padding: 0.85rem;
+  }
+
+  .cartao-financeiro h3 {
+    margin-top: 0;
+    font-size: 1rem;
+  }
+
+  .grupo-botoes-filtro {
+    gap: 0.25rem;
+    padding: 0.3rem;
+  }
+
+  .botao-filtro {
+    min-height: 38px;
+    padding: 0.45rem 0.3rem;
+    font-size: 0.8rem;
+  }
+
+  .filtro-mes-financeiro {
+    padding: 0.4rem;
+  }
+
+  .filtro-mes-financeiro select {
+    min-width: 0;
+    padding: 0.55rem;
+    font-size: 0.9rem;
+  }
+
+  .item-ranking {
+    font-size: 0.92rem;
+  }
+
+  .valor-ranking {
+    overflow-wrap: anywhere;
   }
 }
