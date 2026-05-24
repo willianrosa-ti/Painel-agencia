@@ -28,4 +28,5 @@ select {
   /* Este é o verde padrão temporário. 
      Depois, o React vai mudar esse valor sozinho dependendo da agência! */
   --cor-agencia: #4CAF50; 
+  --cor-fonte-cabecalho: #ffffff;
 }

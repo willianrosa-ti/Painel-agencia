@@ -33,15 +33,25 @@ function aplicarTemaAgencia() {
     '#38bdf8'
   );
 
+  const corFonteCabecalho = corValida(
+    localStorage.getItem('corFonteCabecalhoAgencia'),
+    '#ffffff'
+  );
+
   document.documentElement.style.setProperty('--cor-agencia', corPrimaria);
   document.documentElement.style.setProperty(
     '--cor-agencia-secundaria',
     corSecundaria
   );
+  document.documentElement.style.setProperty(
+    '--cor-fonte-cabecalho',
+    corFonteCabecalho
+  );
 
   return {
     corPrimaria,
-    corSecundaria
+    corSecundaria,
+    corFonteCabecalho
   };
 }
 
@@ -134,6 +144,7 @@ export default function Navbar({ nomeAgencia }) {
       '--cor-agencia-secundaria',
       '#38bdf8'
     );
+    document.documentElement.style.setProperty('--cor-fonte-cabecalho', '#ffffff');
 
     navegar('/login');
   };

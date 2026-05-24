@@ -9,7 +9,7 @@ const API_BASE = 'https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.ne
 const SECOES_OPERAR = [
   { id: 'resumo', label: 'Resumo' },
   { id: 'nova-corrida', label: 'Nova corrida' },
-  { id: 'radar', label: 'Radar' }
+  { id: 'radar', label: 'Corridas' }
 ];
 
 function obterDataHojeInput() {
@@ -31,9 +31,11 @@ function normalizarStatusParaClasse(status) {
 function aplicarTemaAgencia() {
   const corPrimaria = localStorage.getItem('corAgenciaPrimaria') || '#111827';
   const corSecundaria = localStorage.getItem('corAgenciaSecundaria') || '#38bdf8';
+  const corFonteCabecalho = localStorage.getItem('corFonteCabecalhoAgencia') || '#ffffff';
 
   document.documentElement.style.setProperty('--cor-agencia', corPrimaria);
   document.documentElement.style.setProperty('--cor-agencia-secundaria', corSecundaria);
+  document.documentElement.style.setProperty('--cor-fonte-cabecalho', corFonteCabecalho);
 }
 
 export default function Painel() {
@@ -327,7 +329,7 @@ export default function Painel() {
 
         <div className={`cartao-informativo cartao-radar painel-secao-operar ${secaoOperarAtiva === 'radar' ? 'painel-secao-operar--ativa' : ''}`}>
           <div className="cabecalho-radar-painel">
-            <h3 className="titulo-azul">📡 Radar de Corridas</h3>
+            <h3 className="titulo-azul">Corridas</h3>
             <div className="filtro-data-radar">
               <label htmlFor="dataRadar">Filtrar data:</label>
               <input

@@ -8,9 +8,11 @@ const API_BASE = 'https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.ne
 function aplicarTemaAgencia() {
   const corPrimaria = localStorage.getItem('corAgenciaPrimaria') || '#111827';
   const corSecundaria = localStorage.getItem('corAgenciaSecundaria') || '#38bdf8';
+  const corFonteCabecalho = localStorage.getItem('corFonteCabecalhoAgencia') || '#ffffff';
 
   document.documentElement.style.setProperty('--cor-agencia', corPrimaria);
   document.documentElement.style.setProperty('--cor-agencia-secundaria', corSecundaria);
+  document.documentElement.style.setProperty('--cor-fonte-cabecalho', corFonteCabecalho);
 }
 
 export default function Motoristas() {

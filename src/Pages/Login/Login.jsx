@@ -28,7 +28,7 @@ function pegarCampo(objeto, ...nomes) {
   return undefined;
 }
 
-function aplicarTemaAgencia(corPrimaria, corSecundaria) {
+function aplicarTemaAgencia(corPrimaria, corSecundaria, corFonteCabecalho) {
   document.documentElement.style.setProperty(
     '--cor-agencia',
     corPrimaria || '#111827'
@@ -37,6 +37,11 @@ function aplicarTemaAgencia(corPrimaria, corSecundaria) {
   document.documentElement.style.setProperty(
     '--cor-agencia-secundaria',
     corSecundaria || '#38bdf8'
+  );
+
+  document.documentElement.style.setProperty(
+    '--cor-fonte-cabecalho',
+    corFonteCabecalho || '#ffffff'
   );
 }
 
@@ -61,8 +66,13 @@ function salvarPerfilAgencia(dados) {
     pegarCampo(agencia, 'corSecundaria', 'CorSecundaria') ||
     pegarCampo(dados, 'corSecundaria', 'CorSecundaria');
 
+  const corFonteCabecalhoRecebida =
+    pegarCampo(agencia, 'corFonteCabecalho', 'CorFonteCabecalho') ||
+    pegarCampo(dados, 'corFonteCabecalho', 'CorFonteCabecalho');
+
   const corPrimaria = corValida(corPrimariaRecebida, '#111827');
   const corSecundaria = corValida(corSecundariaRecebida, '#38bdf8');
+  const corFonteCabecalho = corValida(corFonteCabecalhoRecebida, '#ffffff');
 
   const logoUrl =
     pegarCampo(agencia, 'logoUrl', 'LogoUrl') ||
@@ -79,11 +89,12 @@ function salvarPerfilAgencia(dados) {
   localStorage.setItem('nomeAgencia', nomeAgencia);
   localStorage.setItem('corAgenciaPrimaria', corPrimaria);
   localStorage.setItem('corAgenciaSecundaria', corSecundaria);
+  localStorage.setItem('corFonteCabecalhoAgencia', corFonteCabecalho);
   localStorage.setItem('logoAgencia', logoUrl);
   localStorage.setItem('logoAgenciaUrl', logoUrl);
   localStorage.setItem('telefoneAgencia', telefoneWhatsApp);
 
-  aplicarTemaAgencia(corPrimaria, corSecundaria);
+  aplicarTemaAgencia(corPrimaria, corSecundaria, corFonteCabecalho);
 
   console.log('[LOGIN] Resposta completa da API:', dados);
   console.log('[LOGIN] Agência salva:', {
@@ -91,6 +102,7 @@ function salvarPerfilAgencia(dados) {
     nomeAgencia,
     corPrimaria,
     corSecundaria,
+    corFonteCabecalho,
     logoUrl,
     telefoneWhatsApp
   });
