@@ -168,9 +168,9 @@
 
 @media (max-width: 520px) {
   .feedback-toast-area {
-    top: auto;
+    top: calc(env(safe-area-inset-top, 0px) + 1rem);
     right: 1rem;
-    bottom: 1rem;
+    bottom: auto;
   }
 
   .feedback-modal__acoes {
@@ -184,8 +184,9 @@
 
 @media (max-width: 380px) {
   .feedback-toast-area {
+    top: calc(env(safe-area-inset-top, 0px) + 0.65rem);
     right: 0.65rem;
-    bottom: 0.65rem;
+    bottom: auto;
     width: calc(100vw - 1.3rem);
     gap: 0.5rem;
   }

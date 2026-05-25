@@ -278,7 +278,7 @@ export default function Painel() {
           <h3 className="titulo-verde">🚀 Nova Corrida</h3>
           <form onSubmit={handleDespacharCorrida} className="formulario-corrida">
             <div className="grupo-inputs-duplo">
-              <input type="text" placeholder="Telefone" value={telPassageiro} onChange={(e) => setTelPassageiro(e.target.value)} required className="input-pequeno" />
+              <input type="tel" inputMode="numeric" autoComplete="tel" placeholder="Telefone" value={telPassageiro} onChange={(e) => setTelPassageiro(e.target.value)} required className="input-pequeno" />
               <input type="text" placeholder="Nome do Passageiro" value={nomePassageiro} onChange={(e) => setNomePassageiro(e.target.value)} required className="input-grande" />
             </div>
 

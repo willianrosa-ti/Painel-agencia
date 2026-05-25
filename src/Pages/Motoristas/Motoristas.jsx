@@ -15,12 +15,33 @@ function aplicarTemaAgencia() {
   document.documentElement.style.setProperty('--cor-fonte-cabecalho', corFonteCabecalho);
 }
 
+function formatarMoeda(valor) {
+  const numero = Number(valor ?? 0);
+  return Number.isFinite(numero) ? numero.toFixed(2).replace('.', ',') : '0,00';
+}
+
+function sanitizarValorDiaria(valor) {
+  return valor.replace(/[^\d,.]/g, '');
+}
+
+function converterValorDiaria(valor) {
+  const texto = String(valor).trim();
+  if (!texto) return NaN;
+
+  const normalizado = texto.includes(',')
+    ? texto.replace(/\./g, '').replace(',', '.')
+    : texto;
+
+  return Number(normalizado);
+}
+
 export default function Motoristas() {
   const { sucesso, erro: mostrarErro, aviso, confirmar } = useFeedback();
   const [frota, setFrota] = useState([]);
   const [nome, setNome] = useState('');
   const [telefone, setTelefone] = useState('');
   const [placa, setPlaca] = useState('');
+  const [valorDiaria, setValorDiaria] = useState('20,00');
   const [senha, setSenha] = useState('');
   const [motoristaEditando, setMotoristaEditando] = useState(null);
   const [salvando, setSalvando] = useState(false);
@@ -48,6 +69,7 @@ export default function Motoristas() {
     setNome('');
     setTelefone('');
     setPlaca('');
+    setValorDiaria('20,00');
     setSenha('');
     setMotoristaEditando(null);
   };
@@ -70,6 +92,13 @@ export default function Motoristas() {
       return;
     }
 
+    const valorDiariaNumerico = converterValorDiaria(valorDiaria);
+
+    if (!Number.isFinite(valorDiariaNumerico) || valorDiariaNumerico <= 0) {
+      aviso('Informe uma diária válida para o motorista.', 'Valor inválido');
+      return;
+    }
+
     const token = localStorage.getItem('tokenAgencia');
     const editando = Boolean(motoristaEditando);
     const url = editando
@@ -89,6 +118,7 @@ export default function Motoristas() {
           nome,
           telefone,
           placaMoto: placa,
+          valorDiaria: valorDiariaNumerico,
           senha: senha.trim() || null
         })
       });
@@ -114,6 +144,7 @@ export default function Motoristas() {
     setNome(motorista.nome || '');
     setTelefone(motorista.telefone || '');
     setPlaca(motorista.placaMoto || '');
+    setValorDiaria(formatarMoeda(motorista.valorDiaria ?? 20));
     setSenha('');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -208,8 +239,9 @@ export default function Motoristas() {
 
           <form onSubmit={handleCadastrarOuEditar} className="formulario-motorista">
             <input type="text" placeholder="Nome" value={nome} onChange={(e) => setNome(e.target.value)} required className="input-motorista" />
-            <input type="text" placeholder="Telefone" value={telefone} onChange={(e) => setTelefone(e.target.value)} required className="input-motorista" />
+            <input type="tel" inputMode="numeric" autoComplete="tel" placeholder="Telefone" value={telefone} onChange={(e) => setTelefone(e.target.value)} required className="input-motorista" />
             <input type="text" placeholder="Placa da Moto" value={placa} onChange={(e) => setPlaca(e.target.value.toUpperCase())} required className="input-motorista" />
+            <input type="text" inputMode="decimal" placeholder="Diária (R$)" value={valorDiaria} onChange={(e) => setValorDiaria(sanitizarValorDiaria(e.target.value))} required className="input-motorista input-motorista-valor" />
             <input
               type="password"
               placeholder={motoristaEditando ? 'Nova senha (opcional)' : 'Senha para o App'}
@@ -232,6 +264,7 @@ export default function Motoristas() {
               <th>Nome</th>
               <th>Telefone</th>
               <th>Placa</th>
+              <th>Diária</th>
               <th>Status</th>
               <th>Online</th>
               <th>Ações</th>
@@ -240,7 +273,7 @@ export default function Motoristas() {
           <tbody>
             {frota.length === 0 ? (
               <tr>
-                <td colSpan="7" className="celula-vazia">Nenhum motorista cadastrado.</td>
+                <td colSpan="8" className="celula-vazia">Nenhum motorista cadastrado.</td>
               </tr>
             ) : (
               frota.map((m) => (
@@ -249,6 +282,7 @@ export default function Motoristas() {
                   <td data-label="Nome">{m.nome}</td>
                   <td data-label="Telefone">{m.telefone}</td>
                   <td data-label="Placa">{m.placaMoto}</td>
+                  <td data-label="Diária">R$ {formatarMoeda(m.valorDiaria ?? 20)}</td>
                   <td data-label="Status">
                     {m.suspenso ? (
                       <span className="status-motorista-suspenso">● Suspenso</span>

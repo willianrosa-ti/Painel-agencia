@@ -209,7 +209,8 @@ export default function Login() {
 
               <input
                 id="telefone"
-                type="text"
+                type="tel"
+                inputMode="numeric"
                 placeholder="(00) 00000-0000"
                 value={telefone}
                 onChange={(e) => {
@@ -217,7 +218,7 @@ export default function Login() {
                   setMensagemErro('');
                 }}
                 className="input-field"
-                autoComplete="username"
+                autoComplete="tel"
               />
             </div>
 

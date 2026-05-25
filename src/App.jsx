@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './Pages/Login/Login';
 import Painel from './Pages/Painel/Painel'; 
 import Motoristas from './Pages/Motoristas/Motoristas';
@@ -7,10 +7,12 @@ import FeedbackProvider from './Components/Feedback/FeedbackProvider';
 import NativeAppSetup from './Components/NativeAppSetup';
 
 export default function App() {
+  const Router = window.location.protocol === 'file:' ? HashRouter : BrowserRouter;
+
   return (
     <FeedbackProvider>
       <NativeAppSetup />
-      <BrowserRouter>
+      <Router>
         <Routes>
           {/* Rota padrão: se entrar vazio, joga pro login */}
           <Route path="/" element={<Navigate to="/login" replace />} />
@@ -29,7 +31,7 @@ export default function App() {
           <Route path="/financeiro" element={<Financeiro />} />
           
         </Routes>
-      </BrowserRouter>
+      </Router>
     </FeedbackProvider>
   );
 }

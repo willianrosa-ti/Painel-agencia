@@ -45,6 +45,10 @@
   min-width: 180px;
 }
 
+.input-motorista-valor {
+  min-width: 130px;
+}
+
 .botao-cadastrar-motorista {
   background-color: var(--cor-agencia-secundaria, #38bdf8);
   color: white;
