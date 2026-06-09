@@ -212,6 +212,10 @@ export default function Navbar({ nomeAgencia }) {
           Operar
         </Link>
 
+        <Link to="/monitoramento" className="navbar-link">
+          Monitorar
+        </Link>
+
         <Link to="/motoristas" className="navbar-link">
           Frota
         </Link>
@@ -300,7 +304,7 @@ export default function Navbar({ nomeAgencia }) {
                   ))}
                 </div>
               )}
-            </div>
+             </div>
           )}
         </div>
 

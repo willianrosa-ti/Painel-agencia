@@ -3,6 +3,7 @@ import Login from './Pages/Login/Login';
 import Painel from './Pages/Painel/Painel'; 
 import Motoristas from './Pages/Motoristas/Motoristas';
 import Financeiro from './Pages/Financeiro/Financeiro';
+import Monitoramento from './Pages/Monitoramento/Monitoramento';
 import FeedbackProvider from './Components/Feedback/FeedbackProvider';
 import NativeAppSetup from './Components/NativeAppSetup';
 
@@ -22,6 +23,7 @@ export default function App() {
           
           {/* Rota do Painel da agência */}
           <Route path="/painel" element={<Painel />} />
+          <Route path="/monitoramento" element={<Monitoramento />} />
 
           {/* --- O QUE FOI ADICIONADO AQUI --- */}
           {/* Rota dos Motoristas: Criamos o caminho "/motoristas". 
