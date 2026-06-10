@@ -488,6 +488,90 @@
   font: inherit;
 }
 
+body.app-agencia-nativo .monitoramento-fundo {
+  min-height: 100dvh;
+}
+
+body.app-agencia-nativo .monitoramento-shell {
+  width: 100%;
+  padding: 0.8rem;
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+}
+
+body.app-agencia-nativo .monitoramento-topo {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-bottom: 0.7rem;
+}
+
+body.app-agencia-nativo .monitoramento-topo h2 {
+  font-size: 1.35rem;
+}
+
+body.app-agencia-nativo .monitoramento-contexto {
+  font-size: 0.76rem;
+}
+
+body.app-agencia-nativo .monitoramento-acoes-topo {
+  width: 100%;
+  gap: 0.45rem;
+  justify-content: flex-start;
+}
+
+body.app-agencia-nativo .monitoramento-tempo-real {
+  min-height: 34px;
+  flex: 1 1 100%;
+  justify-content: center;
+}
+
+body.app-agencia-nativo .monitoramento-botao-secundario {
+  min-height: 38px;
+  flex: 1 1 0;
+}
+
+body.app-agencia-nativo .monitoramento-resumo {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin-bottom: 0.75rem;
+}
+
+body.app-agencia-nativo .monitoramento-resumo-item {
+  min-height: 64px;
+  padding: 0.65rem 0.75rem;
+}
+
+body.app-agencia-nativo .monitoramento-resumo-item span {
+  font-size: 0.72rem;
+}
+
+body.app-agencia-nativo .monitoramento-resumo-item strong {
+  font-size: 1.3rem;
+}
+
+body.app-agencia-nativo .monitoramento-grade {
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+body.app-agencia-nativo .monitoramento-mapa-area,
+body.app-agencia-nativo .monitoramento-mapa {
+  min-height: 360px;
+}
+
+body.app-agencia-nativo .monitoramento-mapa {
+  height: min(56dvh, 470px);
+}
+
+body.app-agencia-nativo .monitoramento-lateral {
+  min-height: 0;
+  padding: 0.85rem;
+}
+
+body.app-agencia-nativo .monitoramento-input-duplo {
+  grid-template-columns: 1fr;
+}
+
 @media (max-width: 1100px) {
   .monitoramento-grade {
     grid-template-columns: 1fr;

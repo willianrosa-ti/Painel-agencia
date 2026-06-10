@@ -9,6 +9,7 @@ import './Monitoramento.css';
 
 const API_BASE = 'https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net';
 const CENTRO_PADRAO = [-22.9782, -49.8718];
+const OSRM_ROUTE_URL = 'https://router.project-osrm.org/route/v1/driving';
 
 const STATUS_LABEL = {
   livre: 'Livre',
@@ -45,18 +46,31 @@ function aplicarTemaAgencia() {
   );
 }
 
-function temCoordenadaValida(motorista) {
-  const latitude = Number(motorista?.latitude);
-  const longitude = Number(motorista?.longitude);
+function obterNumeroCoordenada(valor) {
+  const numero = Number(valor);
+  return Number.isFinite(numero) ? numero : null;
+}
 
-  return (
-    Number.isFinite(latitude) &&
-    Number.isFinite(longitude) &&
-    latitude >= -90 &&
-    latitude <= 90 &&
-    longitude >= -180 &&
-    longitude <= 180
-  );
+function obterPontoCoordenada(latitudeValor, longitudeValor) {
+  const latitude = obterNumeroCoordenada(latitudeValor);
+  const longitude = obterNumeroCoordenada(longitudeValor);
+
+  if (
+    latitude === null ||
+    longitude === null ||
+    latitude < -90 ||
+    latitude > 90 ||
+    longitude < -180 ||
+    longitude > 180
+  ) {
+    return null;
+  }
+
+  return [latitude, longitude];
+}
+
+function temCoordenadaValida(motorista) {
+  return Boolean(obterPontoCoordenada(motorista?.latitude, motorista?.longitude));
 }
 
 function normalizarMotorista(dados) {
@@ -80,8 +94,36 @@ function normalizarMotorista(dados) {
     corridaAtivaId: dados.corridaAtivaId ?? null,
     corridaAtivaBusca: dados.corridaAtivaBusca || '',
     corridaAtivaDestino: dados.corridaAtivaDestino || '',
+    corridaAtivaLatitudeBusca: dados.corridaAtivaLatitudeBusca ?? null,
+    corridaAtivaLongitudeBusca: dados.corridaAtivaLongitudeBusca ?? null,
+    corridaAtivaLatitudeDestino: dados.corridaAtivaLatitudeDestino ?? null,
+    corridaAtivaLongitudeDestino: dados.corridaAtivaLongitudeDestino ?? null,
     statusMapa: dados.statusMapa || (dados.emCorrida ? 'em_corrida' : dados.online ? 'livre' : 'offline')
   };
+}
+
+async function buscarLinhaRota(origem, destino, signal) {
+  const origemUrl = `${origem[1]},${origem[0]}`;
+  const destinoUrl = `${destino[1]},${destino[0]}`;
+  const resposta = await fetch(
+    `${OSRM_ROUTE_URL}/${origemUrl};${destinoUrl}?overview=full&geometries=geojson`,
+    { signal }
+  );
+
+  if (!resposta.ok) {
+    throw new Error('Falha ao buscar rota.');
+  }
+
+  const dados = await resposta.json();
+  const coordenadas = dados?.routes?.[0]?.geometry?.coordinates;
+
+  if (!Array.isArray(coordenadas) || coordenadas.length < 2) {
+    throw new Error('Rota sem coordenadas.');
+  }
+
+  return coordenadas
+    .map(([longitude, latitude]) => obterPontoCoordenada(latitude, longitude))
+    .filter(Boolean);
 }
 
 function atualizarMotoristaNaLista(listaAtual, dados) {
@@ -150,6 +192,8 @@ export default function Monitoramento() {
   const mapaContainerRef = useRef(null);
   const mapaRef = useRef(null);
   const marcadoresRef = useRef(new Map());
+  const rotaLayerRef = useRef(null);
+  const rotaAbortRef = useRef(null);
   const mapaEnquadradoRef = useRef(false);
 
   const [nomeAgencia, setNomeAgencia] = useState('');
@@ -386,6 +430,118 @@ export default function Monitoramento() {
 
     window.setTimeout(() => mapa.invalidateSize(), 50);
   }, [motoristas]);
+
+  useEffect(() => {
+    const mapa = mapaRef.current;
+    if (!mapa) return undefined;
+
+    if (rotaAbortRef.current) {
+      rotaAbortRef.current.abort();
+      rotaAbortRef.current = null;
+    }
+
+    if (rotaLayerRef.current) {
+      rotaLayerRef.current.removeFrom(mapa);
+      rotaLayerRef.current = null;
+    }
+
+    if (!motoristaSelecionado || motoristaSelecionado.statusMapa !== 'em_corrida') {
+      return undefined;
+    }
+
+    const pontoBusca = obterPontoCoordenada(
+      motoristaSelecionado.corridaAtivaLatitudeBusca,
+      motoristaSelecionado.corridaAtivaLongitudeBusca
+    );
+    const pontoDestino = obterPontoCoordenada(
+      motoristaSelecionado.corridaAtivaLatitudeDestino,
+      motoristaSelecionado.corridaAtivaLongitudeDestino
+    );
+    const pontoMoto = obterPontoCoordenada(motoristaSelecionado.latitude, motoristaSelecionado.longitude);
+
+    if (!pontoBusca || !pontoDestino) {
+      return undefined;
+    }
+
+    const camada = L.featureGroup().addTo(mapa);
+    const controlador = new AbortController();
+    rotaLayerRef.current = camada;
+    rotaAbortRef.current = controlador;
+
+    const adicionarPonto = (ponto, cor, titulo) => {
+      L.circleMarker(ponto, {
+        radius: 7,
+        color: '#ffffff',
+        weight: 3,
+        fillColor: cor,
+        fillOpacity: 1
+      })
+        .bindTooltip(titulo, { direction: 'top' })
+        .addTo(camada);
+    };
+
+    if (pontoMoto) adicionarPonto(pontoMoto, '#2563eb', 'Moto');
+    adicionarPonto(pontoBusca, '#16a34a', 'Busca');
+    adicionarPonto(pontoDestino, '#dc2626', 'Destino');
+
+    if (pontoMoto) {
+      L.polyline([pontoMoto, pontoBusca], {
+        color: '#f59e0b',
+        weight: 3,
+        opacity: 0.82,
+        dashArray: '7 8'
+      }).addTo(camada);
+    }
+
+    const ajustarVisao = () => {
+      const limites = camada.getBounds();
+      if (limites.isValid()) {
+        mapa.fitBounds(limites, {
+          padding: [54, 54],
+          maxZoom: 16
+        });
+      }
+
+      window.setTimeout(() => mapa.invalidateSize(), 50);
+    };
+
+    const desenharRota = (pontos) => {
+      if (rotaLayerRef.current !== camada) return;
+
+      L.polyline(pontos, {
+        color: '#2563eb',
+        weight: 5,
+        opacity: 0.92,
+        lineCap: 'round',
+        lineJoin: 'round'
+      }).addTo(camada);
+
+      ajustarVisao();
+    };
+
+    buscarLinhaRota(pontoBusca, pontoDestino, controlador.signal)
+      .then((pontos) => desenharRota(pontos))
+      .catch((erro) => {
+        if (controlador.signal.aborted) return;
+        console.warn('Nao foi possivel buscar a rota detalhada:', erro);
+        desenharRota([pontoBusca, pontoDestino]);
+      });
+
+    ajustarVisao();
+
+    return () => {
+      controlador.abort();
+
+      if (rotaLayerRef.current === camada) {
+        rotaLayerRef.current.removeFrom(mapa);
+        rotaLayerRef.current = null;
+      }
+
+      if (rotaAbortRef.current === controlador) {
+        rotaAbortRef.current = null;
+      }
+    };
+  }, [motoristaSelecionado]);
 
   useEffect(() => {
     if (!motoristaSelecionadoId) return;
