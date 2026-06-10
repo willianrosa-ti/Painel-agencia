@@ -12,11 +12,13 @@ export default defineConfig({
       manifest: {
         name: 'MIL-LIN Painel da Agência',
         short_name: 'MIL-LIN',
+        id: '/login',
         description: 'Painel para despacho de corridas, frota e financeiro da agência.',
         lang: 'pt-BR',
         start_url: '/login',
         scope: '/',
         display: 'standalone',
+        display_override: ['standalone', 'browser'],
         orientation: 'any',
         theme_color: '#111827',
         background_color: '#111827',
@@ -44,6 +46,7 @@ export default defineConfig({
       },
       workbox: {
         navigateFallback: '/index.html',
+        importScripts: ['push-handler.js'],
         globPatterns: ['**/*.{js,css,html,png,svg}']
       }
     })

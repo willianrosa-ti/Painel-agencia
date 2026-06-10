@@ -194,7 +194,6 @@ export default function Monitoramento() {
   const marcadoresRef = useRef(new Map());
   const rotaLayerRef = useRef(null);
   const rotaAbortRef = useRef(null);
-  const mapaEnquadradoRef = useRef(false);
 
   const [nomeAgencia, setNomeAgencia] = useState('');
   const [motoristas, setMotoristas] = useState([]);
@@ -382,7 +381,6 @@ export default function Monitoramento() {
     if (!mapa) return;
 
     const idsAtuais = new Set();
-    const pontos = [];
 
     motoristas.forEach((motorista) => {
       if (!temCoordenadaValida(motorista)) return;
@@ -391,7 +389,6 @@ export default function Monitoramento() {
       const latitude = Number(motorista.latitude);
       const longitude = Number(motorista.longitude);
       idsAtuais.add(id);
-      pontos.push([latitude, longitude]);
 
       const marcadorExistente = marcadoresRef.current.get(id);
       const icone = criarIconeMoto(motorista.statusMapa);
@@ -419,14 +416,6 @@ export default function Monitoramento() {
         marcadoresRef.current.delete(id);
       }
     });
-
-    if (!mapaEnquadradoRef.current && pontos.length > 0) {
-      mapa.fitBounds(L.latLngBounds(pontos), {
-        padding: [48, 48],
-        maxZoom: 15
-      });
-      mapaEnquadradoRef.current = true;
-    }
 
     window.setTimeout(() => mapa.invalidateSize(), 50);
   }, [motoristas]);
@@ -493,15 +482,7 @@ export default function Monitoramento() {
       }).addTo(camada);
     }
 
-    const ajustarVisao = () => {
-      const limites = camada.getBounds();
-      if (limites.isValid()) {
-        mapa.fitBounds(limites, {
-          padding: [54, 54],
-          maxZoom: 16
-        });
-      }
-
+    const atualizarTamanhoMapa = () => {
       window.setTimeout(() => mapa.invalidateSize(), 50);
     };
 
@@ -516,7 +497,7 @@ export default function Monitoramento() {
         lineJoin: 'round'
       }).addTo(camada);
 
-      ajustarVisao();
+      atualizarTamanhoMapa();
     };
 
     buscarLinhaRota(pontoBusca, pontoDestino, controlador.signal)
@@ -527,7 +508,7 @@ export default function Monitoramento() {
         desenharRota([pontoBusca, pontoDestino]);
       });
 
-    ajustarVisao();
+    atualizarTamanhoMapa();
 
     return () => {
       controlador.abort();

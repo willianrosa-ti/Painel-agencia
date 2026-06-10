@@ -488,88 +488,97 @@
   font: inherit;
 }
 
-body.app-agencia-nativo .monitoramento-fundo {
+body.app-agencia-mobile .monitoramento-fundo {
   min-height: 100dvh;
 }
 
-body.app-agencia-nativo .monitoramento-shell {
+body.app-agencia-mobile .monitoramento-shell {
   width: 100%;
   padding: 0.8rem;
   padding-bottom: calc(1rem + env(safe-area-inset-bottom));
 }
 
-body.app-agencia-nativo .monitoramento-topo {
+body.app-agencia-mobile .monitoramento-topo {
   align-items: flex-start;
   flex-direction: column;
   gap: 0.65rem;
   margin-bottom: 0.7rem;
 }
 
-body.app-agencia-nativo .monitoramento-topo h2 {
+body.app-agencia-mobile .monitoramento-topo h2 {
   font-size: 1.35rem;
 }
 
-body.app-agencia-nativo .monitoramento-contexto {
+body.app-agencia-mobile .monitoramento-contexto {
   font-size: 0.76rem;
 }
 
-body.app-agencia-nativo .monitoramento-acoes-topo {
+body.app-agencia-mobile .monitoramento-acoes-topo {
   width: 100%;
   gap: 0.45rem;
   justify-content: flex-start;
 }
 
-body.app-agencia-nativo .monitoramento-tempo-real {
+body.app-agencia-mobile .monitoramento-tempo-real {
   min-height: 34px;
   flex: 1 1 100%;
   justify-content: center;
 }
 
-body.app-agencia-nativo .monitoramento-botao-secundario {
+body.app-agencia-mobile .monitoramento-botao-secundario {
   min-height: 38px;
   flex: 1 1 0;
 }
 
-body.app-agencia-nativo .monitoramento-resumo {
+body.app-agencia-mobile .monitoramento-resumo {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.55rem;
   margin-bottom: 0.75rem;
 }
 
-body.app-agencia-nativo .monitoramento-resumo-item {
+body.app-agencia-mobile .monitoramento-resumo-item {
   min-height: 64px;
   padding: 0.65rem 0.75rem;
 }
 
-body.app-agencia-nativo .monitoramento-resumo-item span {
+body.app-agencia-mobile .monitoramento-resumo-item span {
   font-size: 0.72rem;
 }
 
-body.app-agencia-nativo .monitoramento-resumo-item strong {
+body.app-agencia-mobile .monitoramento-resumo-item strong {
   font-size: 1.3rem;
 }
 
-body.app-agencia-nativo .monitoramento-grade {
+body.app-agencia-mobile .monitoramento-grade {
   grid-template-columns: 1fr;
   gap: 0.75rem;
 }
 
-body.app-agencia-nativo .monitoramento-mapa-area,
-body.app-agencia-nativo .monitoramento-mapa {
+body.app-agencia-mobile .monitoramento-mapa-area,
+body.app-agencia-mobile .monitoramento-mapa {
   min-height: 360px;
 }
 
-body.app-agencia-nativo .monitoramento-mapa {
-  height: min(56dvh, 470px);
+body.app-agencia-mobile .monitoramento-mapa {
+  height: min(calc(var(--app-viewport-height, 100dvh) * 0.56), 470px);
 }
 
-body.app-agencia-nativo .monitoramento-lateral {
+body.app-agencia-mobile .monitoramento-lateral {
   min-height: 0;
   padding: 0.85rem;
 }
 
-body.app-agencia-nativo .monitoramento-input-duplo {
+body.app-agencia-mobile .monitoramento-input-duplo {
   grid-template-columns: 1fr;
+}
+
+body.app-agencia-ios .monitoramento-mapa-area,
+body.app-agencia-ios .monitoramento-mapa {
+  min-height: 330px;
+}
+
+body.app-agencia-ios .monitoramento-legenda {
+  bottom: calc(0.65rem + env(safe-area-inset-bottom));
 }
 
 @media (max-width: 1100px) {

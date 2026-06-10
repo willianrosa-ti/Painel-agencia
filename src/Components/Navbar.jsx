@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useFeedback } from './Feedback/useFeedback';
+import {
+  ativarPushAgencia,
+  navegadorSuportaPush,
+  obterStatusPushAgencia
+} from '../Services/agenciaPushNotifications';
 import './Navbar.css';
 
 const API_BASE = 'https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net';
@@ -57,11 +62,13 @@ function aplicarTemaAgencia() {
 
 export default function Navbar({ nomeAgencia }) {
   const navegar = useNavigate();
-  const { erro: mostrarErro, sucesso: mostrarSucesso } = useFeedback();
+  const { erro: mostrarErro, sucesso: mostrarSucesso, aviso } = useFeedback();
 
   const [notificacoes, setNotificacoes] = useState([]);
   const [dropdownAberto, setDropdownAberto] = useState(false);
   const [respondendoId, setRespondendoId] = useState(null);
+  const [pushStatus, setPushStatus] = useState('indisponivel');
+  const [ativandoPush, setAtivandoPush] = useState(false);
   const notificacaoRef = useRef(null);
 
   const nomeExibido = useMemo(() => {
@@ -110,6 +117,27 @@ export default function Navbar({ nomeAgencia }) {
   }, []);
 
   useEffect(() => {
+    if (!navegadorSuportaPush()) {
+      setPushStatus('indisponivel');
+      return undefined;
+    }
+
+    let ativo = true;
+
+    obterStatusPushAgencia()
+      .then((status) => {
+        if (ativo) setPushStatus(status);
+      })
+      .catch(() => {
+        if (ativo) setPushStatus('pendente');
+      });
+
+    return () => {
+      ativo = false;
+    };
+  }, []);
+
+  useEffect(() => {
     buscarNotificacoes();
 
     const intervalo = setInterval(buscarNotificacoes, 15000);
@@ -147,6 +175,33 @@ export default function Navbar({ nomeAgencia }) {
     document.documentElement.style.setProperty('--cor-fonte-cabecalho', '#ffffff');
 
     navegar('/login');
+  };
+
+  const ativarNotificacoesPush = async () => {
+    const token = localStorage.getItem('tokenAgencia');
+
+    if (!token) {
+      navegar('/login');
+      return;
+    }
+
+    try {
+      setAtivandoPush(true);
+      await ativarPushAgencia(token);
+      setPushStatus('ativo');
+      mostrarSucesso('Notificacoes push ativadas neste dispositivo.');
+    } catch (erro) {
+      console.error('Erro ao ativar Web Push da agencia:', erro);
+
+      if (erro.message?.includes('Permissao')) {
+        setPushStatus('bloqueado');
+        aviso('Permissao de notificacao nao concedida no navegador.');
+      } else {
+        mostrarErro(erro.message || 'Nao foi possivel ativar as notificacoes push.');
+      }
+    } finally {
+      setAtivandoPush(false);
+    }
   };
 
   const formatarData = (valor) => {
@@ -257,13 +312,30 @@ export default function Navbar({ nomeAgencia }) {
               <div className="navbar-dropdown-cabecalho">
                 <strong>Suporte técnico</strong>
 
-                <button
-                  type="button"
-                  onClick={buscarNotificacoes}
-                  className="navbar-botao-atualizar"
-                >
-                  Atualizar
-                </button>
+                <div className="navbar-dropdown-acoes">
+                  {pushStatus !== 'indisponivel' && pushStatus !== 'ativo' && (
+                    <button
+                      type="button"
+                      onClick={ativarNotificacoesPush}
+                      className="navbar-botao-push"
+                      disabled={ativandoPush || pushStatus === 'bloqueado'}
+                    >
+                      {ativandoPush ? 'Ativando...' : 'Ativar push'}
+                    </button>
+                  )}
+
+                  {pushStatus === 'ativo' && (
+                    <span className="navbar-push-ativo">Push ativo</span>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={buscarNotificacoes}
+                    className="navbar-botao-atualizar"
+                  >
+                    Atualizar
+                  </button>
+                </div>
               </div>
 
               {notificacoes.length === 0 ? (

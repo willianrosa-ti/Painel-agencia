@@ -12,6 +12,12 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
 body {
   margin: 0;
   min-width: 0;
@@ -22,6 +28,26 @@ button,
 input,
 select {
   font: inherit;
+}
+
+body.app-agencia-mobile {
+  min-height: var(--app-viewport-height, 100dvh);
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body.app-agencia-ios input,
+body.app-agencia-ios select,
+body.app-agencia-ios textarea {
+  font-size: 16px;
+}
+
+body.app-agencia-ios button,
+body.app-agencia-ios a,
+body.app-agencia-ios input,
+body.app-agencia-ios select,
+body.app-agencia-ios textarea {
+  touch-action: manipulation;
 }
 
 :root {

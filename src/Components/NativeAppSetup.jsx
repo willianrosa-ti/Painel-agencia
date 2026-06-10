@@ -4,12 +4,46 @@ import { ScreenOrientation } from '@capacitor/screen-orientation';
 import { KeepAwake } from '@capacitor-community/keep-awake';
 import AppOverlay from '../Native/Overlay';
 
+function detectarIos() {
+  const userAgent = window.navigator.userAgent || '';
+  const plataforma = window.navigator.platform || '';
+
+  return /iPad|iPhone|iPod/i.test(userAgent) ||
+    (plataforma === 'MacIntel' && window.navigator.maxTouchPoints > 1);
+}
+
+function detectarMobile() {
+  return detectarIos() || /Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(window.navigator.userAgent || '');
+}
+
+function detectarStandalone() {
+  return window.navigator.standalone === true ||
+    window.matchMedia?.('(display-mode: standalone)').matches === true;
+}
+
 function NativeAppSetup() {
   useEffect(() => {
-    if (!Capacitor.isNativePlatform()) return undefined;
-
     let ativo = true;
-    document.body.classList.add('app-agencia-nativo');
+    const plataformaNativa = Capacitor.isNativePlatform() ? Capacitor.getPlatform() : null;
+    const ehNativo = Boolean(plataformaNativa);
+    const ehIos = plataformaNativa === 'ios' || detectarIos();
+    const ehMobile = ehNativo || detectarMobile();
+    const ehStandalone = ehNativo || detectarStandalone();
+
+    const atualizarAlturaViewport = () => {
+      const altura = window.visualViewport?.height || window.innerHeight;
+      document.documentElement.style.setProperty('--app-viewport-height', `${altura}px`);
+    };
+
+    document.body.classList.toggle('app-agencia-nativo', ehNativo);
+    document.body.classList.toggle('app-agencia-mobile', ehMobile);
+    document.body.classList.toggle('app-agencia-ios', ehIos);
+    document.body.classList.toggle('app-agencia-standalone', ehStandalone);
+
+    atualizarAlturaViewport();
+    window.addEventListener('resize', atualizarAlturaViewport);
+    window.addEventListener('orientationchange', atualizarAlturaViewport);
+    window.visualViewport?.addEventListener('resize', atualizarAlturaViewport);
 
     async function limparCacheWebDoApp() {
       try {
@@ -50,6 +84,8 @@ function NativeAppSetup() {
     }
 
     async function configurarAppNativo() {
+      if (!ehNativo) return;
+
       try {
         await limparCacheWebDoApp();
         await ScreenOrientation.unlock();
@@ -72,6 +108,12 @@ function NativeAppSetup() {
     return () => {
       ativo = false;
       document.body.classList.remove('app-agencia-nativo');
+      document.body.classList.remove('app-agencia-mobile');
+      document.body.classList.remove('app-agencia-ios');
+      document.body.classList.remove('app-agencia-standalone');
+      window.removeEventListener('resize', atualizarAlturaViewport);
+      window.removeEventListener('orientationchange', atualizarAlturaViewport);
+      window.visualViewport?.removeEventListener('resize', atualizarAlturaViewport);
     };
   }, []);
 

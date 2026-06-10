@@ -9,6 +9,14 @@
   font-family: sans-serif;
 }
 
+body.app-agencia-mobile .painel-fundo {
+  min-height: var(--app-viewport-height, 100dvh);
+}
+
+body.app-agencia-mobile .painel-conteudo {
+  padding-bottom: calc(1.25rem + env(safe-area-inset-bottom));
+}
+
 .painel-cabecalho {
   background-color: var(--cor-agencia, #111827);
   color: white;

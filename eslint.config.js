@@ -10,7 +10,9 @@ export default defineConfig([
     'android/.gradle',
     'android/build',
     'android/app/build',
-    'android/app/src/main/assets/public'
+    'android/app/src/main/assets/public',
+    'ios',
+    'ios/App/App/public'
   ]),
   {
     files: ['**/*.{js,jsx}'],
