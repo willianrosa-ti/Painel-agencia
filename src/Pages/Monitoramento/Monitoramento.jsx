@@ -563,12 +563,12 @@ export default function Monitoramento() {
     evento.preventDefault();
 
     if (!motoristaSelecionado) {
-      aviso('Selecione uma moto livre no mapa.');
+      aviso('Selecione uma moto no mapa.');
       return;
     }
 
-    if (motoristaSelecionado.statusMapa !== 'livre') {
-      aviso('Este motoboy nao esta livre para receber nova corrida.');
+    if (!['livre', 'em_corrida'].includes(motoristaSelecionado.statusMapa)) {
+      aviso('Selecione um motoboy online para receber a corrida.');
       return;
     }
 
@@ -616,7 +616,11 @@ export default function Monitoramento() {
         return;
       }
 
-      sucesso(`Corrida direcionada para ${motoristaSelecionado.nome}.`);
+      sucesso(
+        motoristaSelecionado.statusMapa === 'em_corrida'
+          ? `Corrida ficará na fila de ${motoristaSelecionado.nome}.`
+          : `Corrida direcionada para ${motoristaSelecionado.nome}.`
+      );
       limparFormularioCorrida();
       buscarMotoristas(false);
     } catch (erro) {
@@ -628,7 +632,7 @@ export default function Monitoramento() {
   };
 
   const statusSelecionado = motoristaSelecionado?.statusMapa || 'offline';
-  const podeDespachar = Boolean(motoristaSelecionado && statusSelecionado === 'livre');
+  const podeDespachar = Boolean(motoristaSelecionado && ['livre', 'em_corrida'].includes(statusSelecionado));
   const localizacaoBaseTexto = cidadeBase && estadoBase ? `${cidadeBase}/${estadoBase}` : 'Cidade base';
 
   return (
@@ -838,15 +842,15 @@ export default function Monitoramento() {
 
                   {!podeDespachar && (
                     <p className="monitoramento-alerta-form">
-                      Selecione uma moto verde para direcionar uma nova corrida.
+                      Selecione uma moto online para direcionar uma nova corrida.
                     </p>
                   )}
                 </form>
               </>
             ) : (
               <div className="monitoramento-selecao-vazia">
-                <h3>Selecione uma moto verde</h3>
-                <p>Ao clicar em um motoboy livre, os dados aparecem aqui e a corrida pode ser direcionada para ele.</p>
+                <h3>Selecione uma moto no mapa</h3>
+                <p>Ao clicar em um motoboy online, os dados aparecem aqui e a corrida pode ser direcionada para ele.</p>
               </div>
             )}
 
