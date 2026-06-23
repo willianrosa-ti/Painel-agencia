@@ -6,7 +6,6 @@ import './Admin.css';
 const API_BASE = 'https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net';
 const ADMIN_KEY_STORAGE = 'milLinAdminKey';
 const ADMIN_SESSION_KEY_STORAGE = 'milLinAdminSessionKey';
-const RELEASES_STORAGE = 'milLinAdminReleases';
 
 const FORM_AGENCIA_INICIAL = {
   nomeAgencia: '',
@@ -24,34 +23,15 @@ const FORM_AGENCIA_INICIAL = {
 };
 
 const RELEASE_INICIAL = {
-  produto: 'Painel da agencia',
+  produto: 'painel-agencia',
   versao: '',
+  canal: 'main',
   data: new Date().toISOString().slice(0, 10),
   obrigatoria: false,
   changelog: '',
-  link: ''
+  link: '',
+  ativa: true
 };
-
-const RELEASES_PADRAO = [
-  {
-    id: 'painel-1.0.6',
-    produto: 'Painel da agencia',
-    versao: '1.0.6',
-    data: '2026-06-23',
-    obrigatoria: false,
-    changelog: 'Base atual do painel desktop da agencia.',
-    link: ''
-  },
-  {
-    id: 'motorista-atual',
-    produto: 'App do motorista',
-    versao: 'Atual',
-    data: '2026-06-23',
-    obrigatoria: false,
-    changelog: 'Registro preparado para integrar com storage e distribuicao do app.',
-    link: ''
-  }
-];
 
 const ROTAS_ADMIN = [
   { to: '/admin/dashboard', label: 'Dashboard' },
@@ -160,13 +140,41 @@ function ordenarPorAtividade(agencias) {
   });
 }
 
-function lerReleasesSalvas() {
-  try {
-    const salvas = JSON.parse(localStorage.getItem(RELEASES_STORAGE) || '[]');
-    return Array.isArray(salvas) && salvas.length > 0 ? salvas : RELEASES_PADRAO;
-  } catch {
-    return RELEASES_PADRAO;
-  }
+function nomeProdutoAtualizacao(produto) {
+  const mapa = {
+    'painel-agencia': 'Painel da agencia',
+    'app-motorista': 'App do motorista'
+  };
+
+  return mapa[produto] || produto;
+}
+
+function releaseParaFormulario(release) {
+  if (!release) return RELEASE_INICIAL;
+
+  return {
+    produto: release.produto || 'painel-agencia',
+    versao: release.versao || '',
+    canal: release.canal || 'main',
+    data: dataParaInput(release.dataPublicacao || release.data),
+    obrigatoria: Boolean(release.obrigatoria),
+    changelog: release.changelog || '',
+    link: release.linkDownload || release.link || '',
+    ativa: release.ativa !== false
+  };
+}
+
+function montarPayloadAtualizacao(formulario) {
+  return {
+    produto: formulario.produto,
+    versao: formulario.versao.trim(),
+    canal: formulario.canal.trim() || 'main',
+    changelog: formulario.changelog.trim(),
+    dataPublicacao: formulario.data ? `${formulario.data}T12:00:00` : null,
+    obrigatoria: Boolean(formulario.obrigatoria),
+    linkDownload: formulario.link.trim() || null,
+    ativa: Boolean(formulario.ativa)
+  };
 }
 
 function ModalBase({ titulo, subtitulo, children, onFechar, largura = 'media' }) {
@@ -661,19 +669,115 @@ function ExclusaoModal({ agencia, onFechar, onConfirmar }) {
   );
 }
 
-function AtualizacoesPage({ sucesso, aviso }) {
-  const [releases, setReleases] = useState(lerReleasesSalvas);
-  const [modalAberto, setModalAberto] = useState(false);
+function AtualizacoesPage({ adminKey, sucesso, aviso, mostrarErro }) {
+  const [releases, setReleases] = useState([]);
+  const [modalAtualizacao, setModalAtualizacao] = useState(null);
   const [filtroProduto, setFiltroProduto] = useState('todos');
+  const [carregando, setCarregando] = useState(false);
+  const [salvando, setSalvando] = useState(false);
 
   const releasesFiltradas = useMemo(
     () => releases.filter((release) => filtroProduto === 'todos' || release.produto === filtroProduto),
     [releases, filtroProduto]
   );
 
-  function salvarReleases(novasReleases) {
-    setReleases(novasReleases);
-    localStorage.setItem(RELEASES_STORAGE, JSON.stringify(novasReleases));
+  async function lerMensagemErroAtualizacao(resposta) {
+    const texto = await resposta.text();
+
+    try {
+      const dados = texto ? JSON.parse(texto) : {};
+      return dados.mensagem || dados.detalhe || texto;
+    } catch {
+      return texto || 'Erro inesperado.';
+    }
+  }
+
+  async function carregarAtualizacoes() {
+    setCarregando(true);
+
+    try {
+      const resposta = await fetch(`${API_BASE}/api/Autenticacao/admin/atualizacoes`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-MIL-LIN-ADMIN-KEY': adminKey
+        }
+      });
+
+      if (!resposta.ok) {
+        mostrarErro(await lerMensagemErroAtualizacao(resposta));
+        return;
+      }
+
+      const dados = await resposta.json();
+      setReleases(Array.isArray(dados) ? dados : []);
+    } catch (erro) {
+      console.error('Erro ao carregar atualizacoes:', erro);
+      mostrarErro('Nao foi possivel carregar as atualizacoes no backend.');
+    } finally {
+      setCarregando(false);
+    }
+  }
+
+  async function salvarAtualizacao(formulario, releaseEditando) {
+    if (!formulario.versao.trim()) {
+      aviso('Informe a versao da atualizacao.');
+      return;
+    }
+
+    setSalvando(true);
+
+    const editando = Boolean(releaseEditando);
+    const url = editando
+      ? `${API_BASE}/api/Autenticacao/admin/atualizacoes/${releaseEditando.id}`
+      : `${API_BASE}/api/Autenticacao/admin/atualizacoes`;
+
+    try {
+      const resposta = await fetch(url, {
+        method: editando ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-MIL-LIN-ADMIN-KEY': adminKey
+        },
+        body: JSON.stringify(montarPayloadAtualizacao(formulario))
+      });
+
+      if (!resposta.ok) {
+        mostrarErro(await lerMensagemErroAtualizacao(resposta));
+        return;
+      }
+
+      sucesso(editando ? 'Versao atualizada no backend.' : 'Versao cadastrada no backend.');
+      setModalAtualizacao(null);
+      await carregarAtualizacoes();
+    } catch (erro) {
+      console.error('Erro ao salvar atualizacao:', erro);
+      mostrarErro('Erro de conexao ao salvar atualizacao.');
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  async function inativarAtualizacao(release) {
+    try {
+      const resposta = await fetch(`${API_BASE}/api/Autenticacao/admin/atualizacoes/${release.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-MIL-LIN-ADMIN-KEY': adminKey
+        }
+      });
+
+      if (!resposta.ok) {
+        mostrarErro(await lerMensagemErroAtualizacao(resposta));
+        return;
+      }
+
+      sucesso('Versao inativada.');
+      await carregarAtualizacoes();
+    } catch (erro) {
+      console.error('Erro ao inativar atualizacao:', erro);
+      mostrarErro('Erro de conexao ao inativar atualizacao.');
+    }
   }
 
   async function copiarLink(link) {
@@ -686,6 +790,12 @@ function AtualizacoesPage({ sucesso, aviso }) {
     sucesso('Link copiado para a area de transferencia.');
   }
 
+  useEffect(() => {
+    carregarAtualizacoes();
+    // Carrega quando a chave administrativa fica disponivel.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adminKey]);
+
   return (
     <div className="admin-content">
       <section className="admin-panel">
@@ -694,7 +804,7 @@ function AtualizacoesPage({ sucesso, aviso }) {
             <p className="admin-eyebrow">Distribuicao</p>
             <h2>Atualizacoes</h2>
           </div>
-          <button type="button" className="admin-button admin-button--primary" onClick={() => setModalAberto(true)}>
+          <button type="button" className="admin-button admin-button--primary" onClick={() => setModalAtualizacao({ release: null })}>
             Nova versao
           </button>
         </header>
@@ -704,11 +814,14 @@ function AtualizacoesPage({ sucesso, aviso }) {
             Produto
             <select value={filtroProduto} onChange={(evento) => setFiltroProduto(evento.target.value)}>
               <option value="todos">Todos</option>
-              <option value="Painel da agencia">Painel da agencia</option>
-              <option value="App do motorista">App do motorista</option>
+              <option value="painel-agencia">Painel da agencia</option>
+              <option value="app-motorista">App do motorista</option>
             </select>
           </label>
-          <span className="admin-muted">Preparado para integrar com backend, storage ou link assinado.</span>
+          <button type="button" className="admin-button admin-button--secondary" onClick={carregarAtualizacoes} disabled={carregando}>
+            {carregando ? 'Atualizando...' : 'Atualizar historico'}
+          </button>
+          <span className="admin-muted">As versoes abaixo estao salvas no backend e podem ser consultadas pelos apps.</span>
         </div>
 
         <div className="admin-table-wrap">
@@ -719,67 +832,91 @@ function AtualizacoesPage({ sucesso, aviso }) {
                 <th>Versao</th>
                 <th>Data</th>
                 <th>Tipo</th>
+                <th>Status</th>
                 <th>Changelog</th>
                 <th>Acoes</th>
               </tr>
             </thead>
             <tbody>
-              {releasesFiltradas.map((release) => (
-                <tr key={release.id}>
-                  <td data-label="Produto">{release.produto}</td>
-                  <td data-label="Versao">{release.versao}</td>
-                  <td data-label="Data">{formatarData(release.data)}</td>
-                  <td data-label="Tipo">
-                    <span className={`admin-status ${release.obrigatoria ? 'admin-status--pendente' : 'admin-status--ativa'}`}>
-                      {release.obrigatoria ? 'Obrigatoria' : 'Opcional'}
-                    </span>
-                  </td>
-                  <td data-label="Changelog">{release.changelog}</td>
-                  <td data-label="Acoes">
-                    <div className="admin-row-actions">
-                      <button type="button" className="admin-action admin-action--edit" onClick={() => copiarLink(release.link)}>
-                        Copiar link
-                      </button>
-                      <button
-                        type="button"
-                        className="admin-action admin-action--ok"
-                        disabled={!release.link}
-                        onClick={() => window.open(release.link, '_blank', 'noopener,noreferrer')}
-                      >
-                        Baixar
-                      </button>
-                    </div>
+              {releasesFiltradas.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="admin-empty">
+                    Nenhuma versao cadastrada.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                releasesFiltradas.map((release) => (
+                  <tr key={release.id}>
+                    <td data-label="Produto">{release.nomeProduto || nomeProdutoAtualizacao(release.produto)}</td>
+                    <td data-label="Versao">{release.versao}</td>
+                    <td data-label="Data">{formatarData(release.dataPublicacao || release.data)}</td>
+                    <td data-label="Tipo">
+                      <span className={`admin-status ${release.obrigatoria ? 'admin-status--pendente' : 'admin-status--ativa'}`}>
+                        {release.obrigatoria ? 'Obrigatoria' : 'Opcional'}
+                      </span>
+                    </td>
+                    <td data-label="Status">
+                      <span className={`admin-status ${release.ativa === false ? 'admin-status--inativa' : 'admin-status--ativa'}`}>
+                        {release.ativa === false ? 'Inativa' : 'Ativa'}
+                      </span>
+                    </td>
+                    <td data-label="Changelog">{release.changelog}</td>
+                    <td data-label="Acoes">
+                      <div className="admin-row-actions">
+                        <button type="button" className="admin-action admin-action--edit" onClick={() => setModalAtualizacao({ release })}>
+                          Editar
+                        </button>
+                        <button type="button" className="admin-action admin-action--edit" onClick={() => copiarLink(release.linkDownload || release.link)}>
+                          Copiar link
+                        </button>
+                        <button
+                          type="button"
+                          className="admin-action admin-action--ok"
+                          disabled={!(release.linkDownload || release.link)}
+                          onClick={() => window.open(release.linkDownload || release.link, '_blank', 'noopener,noreferrer')}
+                        >
+                          Baixar
+                        </button>
+                        {release.ativa !== false && (
+                          <button type="button" className="admin-action admin-action--danger" onClick={() => inativarAtualizacao(release)}>
+                            Inativar
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </section>
 
-      {modalAberto && (
+      {modalAtualizacao && (
         <ReleaseModal
-          onFechar={() => setModalAberto(false)}
-          onSalvar={(release) => {
-            salvarReleases([{ ...release, id: `${release.produto}-${release.versao}-${Date.now()}` }, ...releases]);
-            setModalAberto(false);
-            sucesso('Versao registrada no historico local.');
-          }}
+          release={modalAtualizacao.release}
+          salvando={salvando}
+          onFechar={() => setModalAtualizacao(null)}
+          onSalvar={(release) => salvarAtualizacao(release, modalAtualizacao.release)}
         />
       )}
     </div>
   );
 }
 
-function ReleaseModal({ onFechar, onSalvar }) {
-  const [formulario, setFormulario] = useState(RELEASE_INICIAL);
+function ReleaseModal({ release, salvando, onFechar, onSalvar }) {
+  const [formulario, setFormulario] = useState(() => releaseParaFormulario(release));
 
   function atualizar(campo, valor) {
     setFormulario((atual) => ({ ...atual, [campo]: valor }));
   }
 
   return (
-    <ModalBase titulo="Nova versao" subtitulo="Registro preparado para storage/backend" onFechar={onFechar}>
+    <ModalBase
+      titulo={release ? 'Editar versao' : 'Nova versao'}
+      subtitulo="Registro salvo no backend e consultado pelos apps"
+      onFechar={onFechar}
+    >
       <form
         className="admin-form admin-form--single"
         onSubmit={(evento) => {
@@ -790,9 +927,13 @@ function ReleaseModal({ onFechar, onSalvar }) {
         <label>
           Produto
           <select value={formulario.produto} onChange={(evento) => atualizar('produto', evento.target.value)}>
-            <option>Painel da agencia</option>
-            <option>App do motorista</option>
+            <option value="painel-agencia">Painel da agencia</option>
+            <option value="app-motorista">App do motorista</option>
           </select>
+        </label>
+        <label>
+          Canal
+          <input value={formulario.canal} onChange={(evento) => atualizar('canal', evento.target.value)} placeholder="main" />
         </label>
         <label>
           Versao
@@ -814,12 +955,16 @@ function ReleaseModal({ onFechar, onSalvar }) {
           <input type="checkbox" checked={formulario.obrigatoria} onChange={(evento) => atualizar('obrigatoria', evento.target.checked)} />
           Atualizacao obrigatoria
         </label>
+        <label className="admin-checkbox">
+          <input type="checkbox" checked={formulario.ativa} onChange={(evento) => atualizar('ativa', evento.target.checked)} />
+          Versao ativa
+        </label>
         <footer className="admin-modal__actions">
           <button type="button" className="admin-button admin-button--secondary" onClick={onFechar}>
             Cancelar
           </button>
-          <button type="submit" className="admin-button admin-button--primary">
-            Salvar versao
+          <button type="submit" className="admin-button admin-button--primary" disabled={salvando}>
+            {salvando ? 'Salvando...' : 'Salvar versao'}
           </button>
         </footer>
       </form>
@@ -936,7 +1081,7 @@ function TabelaAtividade({ agencias }) {
   );
 }
 
-function ConfiguracoesPage({ apiStatus, adminKey, temChaveSalva, onApagarChaveSalva, onSair, onLimparReleases }) {
+function ConfiguracoesPage({ apiStatus, adminKey, temChaveSalva, onApagarChaveSalva, onSair }) {
   return (
     <div className="admin-content">
       <section className="admin-panel">
@@ -965,9 +1110,6 @@ function ConfiguracoesPage({ apiStatus, adminKey, temChaveSalva, onApagarChaveSa
         <div className="admin-settings-actions">
           <button type="button" className="admin-button admin-button--secondary" onClick={onApagarChaveSalva}>
             Apagar chave administrativa salva
-          </button>
-          <button type="button" className="admin-button admin-button--secondary" onClick={onLimparReleases}>
-            Limpar historico local de versoes
           </button>
           <button type="button" className="admin-button admin-button--danger" onClick={onSair}>
             Encerrar sessao administrativa
@@ -1238,11 +1380,6 @@ export default function Admin() {
     navegar('/admin/login', { replace: true });
   }
 
-  function limparReleases() {
-    localStorage.removeItem(RELEASES_STORAGE);
-    sucesso('Historico local de versoes limpo.');
-  }
-
   if (!autenticado) {
     return (
       <AdminLogin
@@ -1284,7 +1421,7 @@ export default function Admin() {
             />
           }
         />
-        <Route path="atualizacoes" element={<AtualizacoesPage sucesso={sucesso} aviso={aviso} />} />
+        <Route path="atualizacoes" element={<AtualizacoesPage adminKey={adminKey} sucesso={sucesso} aviso={aviso} mostrarErro={mostrarErro} />} />
         <Route path="monitoramento" element={<MonitoramentoPage agencias={agencias} />} />
         <Route
           path="configuracoes"
@@ -1295,7 +1432,6 @@ export default function Admin() {
               temChaveSalva={temChaveSalva}
               onApagarChaveSalva={apagarChaveSalva}
               onSair={sairAdmin}
-              onLimparReleases={limparReleases}
             />
           }
         />

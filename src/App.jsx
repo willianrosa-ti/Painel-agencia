@@ -7,6 +7,7 @@ import Monitoramento from './Pages/Monitoramento/Monitoramento';
 import Admin from './Pages/Admin/Admin';
 import FeedbackProvider from './Components/Feedback/FeedbackProvider';
 import NativeAppSetup from './Components/NativeAppSetup';
+import AppUpdateNotice from './Components/AppUpdateNotice';
 
 export default function App() {
   const Router = window.location.protocol === 'file:' ? HashRouter : BrowserRouter;
@@ -14,6 +15,7 @@ export default function App() {
   return (
     <FeedbackProvider>
       <NativeAppSetup />
+      <AppUpdateNotice />
       <Router>
         <Routes>
           {/* Rota padrão: se entrar vazio, joga pro login */}
