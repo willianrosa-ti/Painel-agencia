@@ -4,6 +4,7 @@ import Painel from './Pages/Painel/Painel';
 import Motoristas from './Pages/Motoristas/Motoristas';
 import Financeiro from './Pages/Financeiro/Financeiro';
 import Monitoramento from './Pages/Monitoramento/Monitoramento';
+import Admin from './Pages/Admin/Admin';
 import FeedbackProvider from './Components/Feedback/FeedbackProvider';
 import NativeAppSetup from './Components/NativeAppSetup';
 
@@ -20,6 +21,11 @@ export default function App() {
           
           {/* Rota do Login */}
           <Route path="/login" element={<Login />} />
+          <Route path="/admin/*" element={<Admin />} />
+          <Route path="/dashboard" element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="/agencias" element={<Navigate to="/admin/agencias" replace />} />
+          <Route path="/atualizacoes" element={<Navigate to="/admin/atualizacoes" replace />} />
+          <Route path="/configuracoes" element={<Navigate to="/admin/configuracoes" replace />} />
           
           {/* Rota do Painel da agência */}
           <Route path="/painel" element={<Painel />} />

@@ -251,6 +251,10 @@ export default function Login() {
               {carregando ? 'ENTRANDO...' : 'ENTRAR'}
             </button>
           </form>
+
+          <button type="button" className="btn-admin-login" onClick={() => navegar('/admin')}>
+            Admin MIL-LIN
+          </button>
         </div>
       </div>
     </div>
