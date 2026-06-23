@@ -493,9 +493,44 @@
   min-height: 42px;
 }
 
+.admin-checkbox--login {
+  align-items: center;
+  display: grid;
+  font-size: 0.86rem;
+  margin-top: 2px;
+}
+
 .admin-checkbox input {
   min-height: 20px;
   width: 20px;
+}
+
+.admin-saved-key {
+  align-items: center;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  color: #1e3a8a;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  padding: 10px;
+}
+
+.admin-saved-key span {
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.admin-saved-key button {
+  background: transparent;
+  border: none;
+  color: #1d4ed8;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 900;
+  padding: 0;
 }
 
 .admin-modal-backdrop {

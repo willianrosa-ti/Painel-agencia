@@ -5,6 +5,7 @@ import './Admin.css';
 
 const API_BASE = 'https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net';
 const ADMIN_KEY_STORAGE = 'milLinAdminKey';
+const ADMIN_SESSION_KEY_STORAGE = 'milLinAdminSessionKey';
 const RELEASES_STORAGE = 'milLinAdminReleases';
 
 const FORM_AGENCIA_INICIAL = {
@@ -187,7 +188,16 @@ function ModalBase({ titulo, subtitulo, children, onFechar, largura = 'media' })
   );
 }
 
-function AdminLogin({ adminKey, setAdminKey, verificando, onEntrar }) {
+function AdminLogin({
+  adminKey,
+  setAdminKey,
+  verificando,
+  lembrarChave,
+  setLembrarChave,
+  temChaveSalva,
+  onEntrar,
+  onApagarChaveSalva
+}) {
   return (
     <main className="admin-login-page">
       <section className="admin-login-panel">
@@ -214,6 +224,22 @@ function AdminLogin({ adminKey, setAdminKey, verificando, onEntrar }) {
             placeholder="X-MIL-LIN-ADMIN-KEY"
             autoComplete="off"
           />
+          <label className="admin-checkbox admin-checkbox--login">
+            <input
+              type="checkbox"
+              checked={lembrarChave}
+              onChange={(evento) => setLembrarChave(evento.target.checked)}
+            />
+            Lembrar chave neste computador
+          </label>
+          {temChaveSalva && (
+            <div className="admin-saved-key">
+              <span>Existe uma chave salva neste computador.</span>
+              <button type="button" onClick={onApagarChaveSalva}>
+                Apagar chave salva
+              </button>
+            </div>
+          )}
           <button type="submit" className="admin-button admin-button--primary" disabled={verificando}>
             {verificando ? 'Validando...' : 'Entrar'}
           </button>
@@ -910,7 +936,7 @@ function TabelaAtividade({ agencias }) {
   );
 }
 
-function ConfiguracoesPage({ apiStatus, adminKey, onSair, onLimparReleases }) {
+function ConfiguracoesPage({ apiStatus, adminKey, temChaveSalva, onApagarChaveSalva, onSair, onLimparReleases }) {
   return (
     <div className="admin-content">
       <section className="admin-panel">
@@ -932,11 +958,14 @@ function ConfiguracoesPage({ apiStatus, adminKey, onSair, onLimparReleases }) {
           </div>
           <div className="admin-setting-row">
             <span>Chave local</span>
-            <strong>{adminKey ? 'Salva neste computador' : 'Nao salva'}</strong>
+            <strong>{temChaveSalva ? 'Salva neste computador' : adminKey ? 'Somente nesta sessao' : 'Nao salva'}</strong>
           </div>
         </div>
 
         <div className="admin-settings-actions">
+          <button type="button" className="admin-button admin-button--secondary" onClick={onApagarChaveSalva}>
+            Apagar chave administrativa salva
+          </button>
           <button type="button" className="admin-button admin-button--secondary" onClick={onLimparReleases}>
             Limpar historico local de versoes
           </button>
@@ -952,7 +981,13 @@ function ConfiguracoesPage({ apiStatus, adminKey, onSair, onLimparReleases }) {
 export default function Admin() {
   const navegar = useNavigate();
   const { sucesso, erro: mostrarErro, aviso } = useFeedback();
-  const [adminKey, setAdminKey] = useState(() => localStorage.getItem(ADMIN_KEY_STORAGE) || '');
+  const [adminKey, setAdminKey] = useState(
+    () => localStorage.getItem(ADMIN_KEY_STORAGE) || sessionStorage.getItem(ADMIN_SESSION_KEY_STORAGE) || ''
+  );
+  const [lembrarChave, setLembrarChave] = useState(
+    () => !sessionStorage.getItem(ADMIN_SESSION_KEY_STORAGE)
+  );
+  const [temChaveSalva, setTemChaveSalva] = useState(() => Boolean(localStorage.getItem(ADMIN_KEY_STORAGE)));
   const [autenticado, setAutenticado] = useState(false);
   const [verificando, setVerificando] = useState(false);
   const [carregando, setCarregando] = useState(false);
@@ -1008,7 +1043,7 @@ export default function Admin() {
     }
   }
 
-  async function validarChave(chaveRecebida = adminKey, silencioso = false) {
+  async function validarChave(chaveRecebida = adminKey, silencioso = false, deveLembrar = lembrarChave) {
     const chave = chaveRecebida.trim();
 
     if (!chave) {
@@ -1032,7 +1067,16 @@ export default function Admin() {
         return;
       }
 
-      localStorage.setItem(ADMIN_KEY_STORAGE, chave);
+      if (deveLembrar) {
+        localStorage.setItem(ADMIN_KEY_STORAGE, chave);
+        sessionStorage.removeItem(ADMIN_SESSION_KEY_STORAGE);
+        setTemChaveSalva(true);
+      } else {
+        localStorage.removeItem(ADMIN_KEY_STORAGE);
+        sessionStorage.setItem(ADMIN_SESSION_KEY_STORAGE, chave);
+        setTemChaveSalva(false);
+      }
+
       setAdminKey(chave);
       setAutenticado(true);
       setApiStatus('online');
@@ -1050,7 +1094,20 @@ export default function Admin() {
 
   useEffect(() => {
     const chaveSalva = localStorage.getItem(ADMIN_KEY_STORAGE);
-    if (chaveSalva) validarChave(chaveSalva, true);
+    const chaveSessao = sessionStorage.getItem(ADMIN_SESSION_KEY_STORAGE);
+
+    if (chaveSalva) {
+      setLembrarChave(true);
+      setTemChaveSalva(true);
+      validarChave(chaveSalva, true, true);
+      return;
+    }
+
+    if (chaveSessao) {
+      setLembrarChave(false);
+      setTemChaveSalva(false);
+      validarChave(chaveSessao, true, false);
+    }
     // Restauracao inicial da sessao administrativa.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -1159,10 +1216,25 @@ export default function Admin() {
   }
 
   function sairAdmin() {
+    sessionStorage.removeItem(ADMIN_SESSION_KEY_STORAGE);
+    const chaveSalva = localStorage.getItem(ADMIN_KEY_STORAGE) || '';
+    setAdminKey(chaveSalva);
+    setAutenticado(false);
+    setAgencias([]);
+    setTemChaveSalva(Boolean(chaveSalva));
+    setLembrarChave(true);
+    navegar('/admin/login', { replace: true });
+  }
+
+  function apagarChaveSalva() {
     localStorage.removeItem(ADMIN_KEY_STORAGE);
+    sessionStorage.removeItem(ADMIN_SESSION_KEY_STORAGE);
     setAdminKey('');
     setAutenticado(false);
     setAgencias([]);
+    setTemChaveSalva(false);
+    setLembrarChave(true);
+    aviso('Chave administrativa removida deste computador.');
     navegar('/admin/login', { replace: true });
   }
 
@@ -1177,7 +1249,11 @@ export default function Admin() {
         adminKey={adminKey}
         setAdminKey={setAdminKey}
         verificando={verificando}
-        onEntrar={() => validarChave()}
+        lembrarChave={lembrarChave}
+        setLembrarChave={setLembrarChave}
+        temChaveSalva={temChaveSalva}
+        onEntrar={() => validarChave(adminKey, false, lembrarChave)}
+        onApagarChaveSalva={apagarChaveSalva}
       />
     );
   }
@@ -1216,6 +1292,8 @@ export default function Admin() {
             <ConfiguracoesPage
               apiStatus={apiStatus}
               adminKey={adminKey}
+              temChaveSalva={temChaveSalva}
+              onApagarChaveSalva={apagarChaveSalva}
               onSair={sairAdmin}
               onLimparReleases={limparReleases}
             />
