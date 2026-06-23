@@ -36,9 +36,9 @@ const RELEASE_INICIAL = {
 const ROTAS_ADMIN = [
   { to: '/admin/dashboard', label: 'Dashboard' },
   { to: '/admin/agencias', label: 'Agencias' },
-  { to: '/admin/atualizacoes', label: 'Atualizacoes' },
+  { to: '/admin/atualizacoes', label: 'Atualizações' },
   { to: '/admin/monitoramento', label: 'Monitoramento' },
-  { to: '/admin/configuracoes', label: 'Configuracoes' }
+  { to: '/admin/configuracoes', label: 'Configurações' }
 ];
 
 function dataParaInput(valor) {
