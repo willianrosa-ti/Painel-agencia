@@ -1,3 +1,4 @@
+import ChatAgencia from './Components/ChatAgencia';
 import { BrowserRouter, HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './Pages/Login/Login';
 import Painel from './Pages/Painel/Painel'; 
@@ -41,6 +42,7 @@ export default function App() {
           <Route path="/financeiro" element={<Financeiro />} />
           
         </Routes>
+      <ChatAgencia />
       </Router>
     </FeedbackProvider>
   );

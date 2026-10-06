@@ -1,3 +1,4 @@
+import { distribuirMarcadores, svgMoto } from './mapaMotoristas';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as signalR from '@microsoft/signalr';
@@ -47,6 +48,7 @@ function aplicarTemaAgencia() {
 }
 
 function obterNumeroCoordenada(valor) {
+  if (valor === null || valor === undefined || valor === '') return null;
   const numero = Number(valor);
   return Number.isFinite(numero) ? numero : null;
 }
@@ -92,6 +94,7 @@ function normalizarMotorista(dados) {
     ultimaAtividade: dados.ultimaAtividade,
     emCorrida: Boolean(dados.emCorrida),
     corridaAtivaId: dados.corridaAtivaId ?? null,
+    etapaCorrida: dados.etapaCorrida || 'Busca',
     corridaAtivaBusca: dados.corridaAtivaBusca || '',
     corridaAtivaDestino: dados.corridaAtivaDestino || '',
     corridaAtivaLatitudeBusca: dados.corridaAtivaLatitudeBusca ?? null,
@@ -145,23 +148,10 @@ function atualizarMotoristaNaLista(listaAtual, dados) {
   return novaLista;
 }
 
-function criarIconeMoto(statusMapa) {
-  const status = statusMapa === 'em_corrida' ? 'em-corrida' : statusMapa === 'livre' ? 'livre' : 'offline';
-
-  return L.divIcon({
-    className: `monitoramento-moto-marker monitoramento-moto-marker--${status}`,
-    iconSize: [42, 42],
-    iconAnchor: [21, 21],
-    html: `
-      <div class="monitoramento-moto-icone" aria-hidden="true">
-        <span class="monitoramento-moto-roda monitoramento-moto-roda--traseira"></span>
-        <span class="monitoramento-moto-roda monitoramento-moto-roda--dianteira"></span>
-        <span class="monitoramento-moto-corpo"></span>
-        <span class="monitoramento-moto-banco"></span>
-        <span class="monitoramento-moto-guidom"></span>
-      </div>
-    `
-  });
+function criarIconeMoto(motorista) {
+  const status = motorista.statusMapa === 'em_corrida' ? 'em-corrida' : motorista.statusMapa === 'livre' ? 'livre' : 'offline';
+  return L.divIcon({ className: 'monitoramento-moto-marker monitoramento-moto-marker--' + status,
+    iconSize: [64, 64], iconAnchor: [32, 55], html: svgMoto(motorista.emCorrida && motorista.etapaCorrida === 'Destino') });
 }
 
 function formatarData(valor) {
@@ -194,6 +184,8 @@ export default function Monitoramento() {
   const marcadoresRef = useRef(new Map());
   const rotaLayerRef = useRef(null);
   const rotaAbortRef = useRef(null);
+  const separacaoRef = useRef(null);
+  const [zoomMapa, setZoomMapa] = useState(0);
 
   const [nomeAgencia, setNomeAgencia] = useState('');
   const [motoristas, setMotoristas] = useState([]);
@@ -306,7 +298,7 @@ export default function Monitoramento() {
     if (!token || !agenciaId) return undefined;
 
     const conexao = new signalR.HubConnectionBuilder()
-      .withUrl(`${API_BASE}/hub-corridas`)
+      .withUrl(`${API_BASE}/hub-corridas`, { accessTokenFactory: () => localStorage.getItem('tokenAgencia') || '' })
       .withAutomaticReconnect()
       .build();
 
@@ -362,6 +354,7 @@ export default function Monitoramento() {
     L.control.zoom({ position: 'bottomright' }).addTo(mapa);
 
     mapaRef.current = mapa;
+    mapa.on('zoomend', () => setZoomMapa(valor => valor + 1));
     const marcadores = marcadoresRef.current;
 
     const ajustarTamanho = () => mapa.invalidateSize();
@@ -381,7 +374,14 @@ export default function Monitoramento() {
     if (!mapa) return;
 
     const idsAtuais = new Set();
-
+    if (separacaoRef.current) separacaoRef.current.removeFrom(mapa);
+    const pernas = L.layerGroup().addTo(mapa);
+    separacaoRef.current = pernas;
+    const pontos = motoristas.filter(temCoordenadaValida).map(m => {
+      const p = mapa.latLngToLayerPoint([Number(m.latitude), Number(m.longitude)]);
+      return { id: String(m.id), x: p.x, y: p.y };
+    });
+    const posicoes = new Map(distribuirMarcadores(pontos, 64).map(p => [p.id, p]));
     motoristas.forEach((motorista) => {
       if (!temCoordenadaValida(motorista)) return;
 
@@ -391,15 +391,18 @@ export default function Monitoramento() {
       idsAtuais.add(id);
 
       const marcadorExistente = marcadoresRef.current.get(id);
-      const icone = criarIconeMoto(motorista.statusMapa);
+      const icone = criarIconeMoto(motorista);
+      const ponto = posicoes.get(id);
+      const posicao = ponto ? mapa.layerPointToLatLng([ponto.x, ponto.y]) : L.latLng(latitude, longitude);
+      if (ponto?.deslocado) L.polyline([[latitude, longitude], posicao], { color: '#64748b', weight: 1.5, opacity: .6, interactive: false, dashArray: '3 4' }).addTo(pernas);
 
       if (marcadorExistente) {
-        marcadorExistente.setLatLng([latitude, longitude]);
+        marcadorExistente.setLatLng(posicao);
         marcadorExistente.setIcon(icone);
         marcadorExistente.off('click');
         marcadorExistente.on('click', () => setMotoristaSelecionadoId(motorista.id));
       } else {
-        const marcador = L.marker([latitude, longitude], {
+        const marcador = L.marker(posicao, {
           icon: icone,
           title: motorista.nome
         });
@@ -418,7 +421,7 @@ export default function Monitoramento() {
     });
 
     window.setTimeout(() => mapa.invalidateSize(), 50);
-  }, [motoristas]);
+  }, [motoristas, zoomMapa]);
 
   useEffect(() => {
     const mapa = mapaRef.current;
@@ -473,42 +476,19 @@ export default function Monitoramento() {
     adicionarPonto(pontoBusca, '#16a34a', 'Busca');
     adicionarPonto(pontoDestino, '#dc2626', 'Destino');
 
-    if (pontoMoto) {
-      L.polyline([pontoMoto, pontoBusca], {
-        color: '#f59e0b',
-        weight: 3,
-        opacity: 0.82,
-        dashArray: '7 8'
-      }).addTo(camada);
-    }
-
-    const atualizarTamanhoMapa = () => {
-      window.setTimeout(() => mapa.invalidateSize(), 50);
+    const emBusca = motoristaSelecionado.etapaCorrida !== 'Destino';
+    const desenharTrecho = async (origem, destino, cor) => {
+      let pontos;
+      let aproximada = false;
+      try { pontos = await buscarLinhaRota(origem, destino, controlador.signal); }
+      catch { if (controlador.signal.aborted) return; pontos = [origem, destino]; aproximada = true; }
+      if (rotaLayerRef.current !== camada || controlador.signal.aborted) return;
+      L.polyline(pontos, { color: cor, weight: 5, opacity: .92, lineCap: 'round', lineJoin: 'round',
+        dashArray: aproximada ? '6 8' : undefined }).bindTooltip(aproximada ? 'Rota aproximada: serviço de rotas indisponível' : cor === '#16a34a' ? 'Busca do passageiro' : 'Trajeto ao destino').addTo(camada);
     };
-
-    const desenharRota = (pontos) => {
-      if (rotaLayerRef.current !== camada) return;
-
-      L.polyline(pontos, {
-        color: '#2563eb',
-        weight: 5,
-        opacity: 0.92,
-        lineCap: 'round',
-        lineJoin: 'round'
-      }).addTo(camada);
-
-      atualizarTamanhoMapa();
-    };
-
-    buscarLinhaRota(pontoBusca, pontoDestino, controlador.signal)
-      .then((pontos) => desenharRota(pontos))
-      .catch((erro) => {
-        if (controlador.signal.aborted) return;
-        console.warn('Nao foi possivel buscar a rota detalhada:', erro);
-        desenharRota([pontoBusca, pontoDestino]);
-      });
-
-    atualizarTamanhoMapa();
+    if (emBusca && pontoMoto) desenharTrecho(pontoMoto, pontoBusca, '#16a34a');
+    desenharTrecho(!emBusca && pontoMoto ? pontoMoto : pontoBusca, pontoDestino, '#2563eb');
+    mapa.invalidateSize();
 
     return () => {
       controlador.abort();

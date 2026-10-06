@@ -43,6 +43,8 @@ export default function Motoristas() {
   const [placa, setPlaca] = useState('');
   const [valorDiaria, setValorDiaria] = useState('20,00');
   const [senha, setSenha] = useState('');
+  const [horarioInicio, setHorarioInicio] = useState('');
+  const [horarioFim, setHorarioFim] = useState('');
   const [motoristaEditando, setMotoristaEditando] = useState(null);
   const [salvando, setSalvando] = useState(false);
 
@@ -72,6 +74,7 @@ export default function Motoristas() {
     setValorDiaria('20,00');
     setSenha('');
     setMotoristaEditando(null);
+    setHorarioInicio(''); setHorarioFim('');
   };
 
   const lerMensagemErro = async (res) => {
@@ -99,6 +102,9 @@ export default function Motoristas() {
       return;
     }
 
+    if (Boolean(horarioInicio) !== Boolean(horarioFim) || (horarioInicio && horarioInicio === horarioFim)) {
+      aviso('Informe início e fim diferentes, ou deixe ambos vazios para horário livre.'); return;
+    }
     const token = localStorage.getItem('tokenAgencia');
     const editando = Boolean(motoristaEditando);
     const url = editando
@@ -119,7 +125,8 @@ export default function Motoristas() {
           telefone,
           placaMoto: placa,
           valorDiaria: valorDiariaNumerico,
-          senha: senha.trim() || null
+          senha: senha.trim() || null,
+          horarioInicio: horarioInicio || null, horarioFim: horarioFim || null
         })
       });
 
@@ -142,6 +149,7 @@ export default function Motoristas() {
   const iniciarEdicao = (motorista) => {
     setMotoristaEditando(motorista);
     setNome(motorista.nome || '');
+    setHorarioInicio(motorista.horarioInicio || ''); setHorarioFim(motorista.horarioFim || '');
     setTelefone(motorista.telefone || '');
     setPlaca(motorista.placaMoto || '');
     setValorDiaria(formatarMoeda(motorista.valorDiaria ?? 20));
@@ -251,6 +259,12 @@ export default function Motoristas() {
               className="input-motorista"
             />
 
+            <fieldset className="horario-motorista"><legend>Horário de atuação · Brasília</legend>
+              <label>Das<input type="time" value={horarioInicio} onChange={e => setHorarioInicio(e.target.value)} aria-label="Início do horário" /></label>
+              <label>Às<input type="time" value={horarioFim} onChange={e => setHorarioFim(e.target.value)} aria-label="Fim do horário" /></label>
+              <button type="button" onClick={() => { setHorarioInicio(''); setHorarioFim(''); }}>Horário livre</button>
+              <small>Fora do horário, conclui a corrida atual e não recebe novas. Aceita turnos que passam da meia-noite.</small>
+            </fieldset>
             <button type="submit" className="botao-cadastrar-motorista" disabled={salvando}>
               {salvando ? 'Salvando...' : motoristaEditando ? 'Salvar alterações' : 'Cadastrar'}
             </button>
@@ -265,6 +279,7 @@ export default function Motoristas() {
               <th>Telefone</th>
               <th>Placa</th>
               <th>Diária</th>
+              <th>Horário</th>
               <th>Status</th>
               <th>Online</th>
               <th>Ações</th>
@@ -273,7 +288,7 @@ export default function Motoristas() {
           <tbody>
             {frota.length === 0 ? (
               <tr>
-                <td colSpan="8" className="celula-vazia">Nenhum motorista cadastrado.</td>
+                <td colSpan="9" className="celula-vazia">Nenhum motorista cadastrado.</td>
               </tr>
             ) : (
               frota.map((m) => (
@@ -283,6 +298,7 @@ export default function Motoristas() {
                   <td data-label="Telefone">{m.telefone}</td>
                   <td data-label="Placa">{m.placaMoto}</td>
                   <td data-label="Diária">R$ {formatarMoeda(m.valorDiaria ?? 20)}</td>
+                  <td data-label="Horário">{m.horarioInicio ? `${m.horarioInicio} às ${m.horarioFim}` : 'Livre'}</td>
                   <td data-label="Status">
                     {m.suspenso ? (
                       <span className="status-motorista-suspenso">● Suspenso</span>
@@ -299,6 +315,7 @@ export default function Motoristas() {
                   </td>
                   <td data-label="Ações">
                     <div className="acoes-motorista">
+                      <button type="button" className="botao-acao" onClick={() => window.dispatchEvent(new CustomEvent('abrir-chat-motorista', { detail: { motoristaId: m.id } }))}>Mensagem</button>
                       <button type="button" className="botao-acao editar" onClick={() => iniciarEdicao(m)}>Editar</button>
                       <button type="button" className={m.suspenso ? 'botao-acao reativar' : 'botao-acao suspender'} onClick={() => alterarSuspensao(m)}>
                         {m.suspenso ? 'Reativar' : 'Suspender'}

@@ -1,7 +1,7 @@
 {
   "name": "painel-agencia",
   "private": true,
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Painel desktop para despacho de corridas da agencia MIL-LIN.",
   "author": "MIL-LIN",
   "type": "module",
@@ -22,7 +22,8 @@
     "android:build:release": "npm run build && cap sync android && cd android && gradlew.bat bundleRelease",
     "ios:add": "cap add ios",
     "ios:sync": "npm run build && cap sync ios",
-    "ios:open": "cap open ios"
+    "ios:open": "cap open ios",
+    "test": "node --test tests/*.test.js"
   },
   "dependencies": {
     "@capacitor-community/keep-awake": "^8.0.1",

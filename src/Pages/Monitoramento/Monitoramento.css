@@ -651,3 +651,9 @@ body.app-agencia-ios .monitoramento-legenda {
     bottom: 0.65rem;
   }
 }
+
+/* Contain all Leaflet panes below menus and floating conversations. */
+.monitoramento-mapa { isolation: isolate; z-index: 0; }
+.monitoramento-moto-marker { background: transparent !important; border: 0 !important; box-shadow: none !important; }
+.monitoramento-moto-marker svg { width: 64px; height: 64px; filter: drop-shadow(0 2px 2px #0f172a50); }
+.monitoramento-moto-marker--offline svg { filter: grayscale(1) drop-shadow(0 2px 2px #0f172a30); opacity: .65; }

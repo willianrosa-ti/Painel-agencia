@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
+import { version as APP_VERSION } from '../../package.json';
 import './AppUpdateNotice.css';
 
 const API_BASE = 'https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net';
-const APP_VERSION = '1.0.6';
 const DISMISS_STORAGE_PREFIX = 'milLinPainelUpdateDismissed';
 
 export default function AppUpdateNotice() {
