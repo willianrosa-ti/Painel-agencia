@@ -125,10 +125,10 @@ export default function NotificarMotoristas({ frota }) {
       </form>
 
       <div className="avisos-enviados">
-        <h4>Últimos avisos enviados</h4>
+        <h4>Último aviso enviado</h4>
         {enviados.length === 0 ? (
           <p className="texto-vazio">Nenhum aviso enviado ainda.</p>
-        ) : enviados.map(lote => (
+        ) : enviados.slice(0, 1).map(lote => (
           <div key={lote.loteId} className="aviso-enviado">
             <p>{lote.texto}</p>
             <small>
