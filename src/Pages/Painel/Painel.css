@@ -832,3 +832,127 @@ body.app-agencia-mobile .painel-conteudo {
     width: auto;
   }
 }
+
+/* --- Notificar motoristas (Operar) --- */
+.formulario-aviso .aviso-texto {
+  min-height: 7rem;
+  resize: vertical;
+  font: inherit;
+  line-height: 1.45;
+}
+
+.aviso-contador {
+  align-self: flex-end;
+  color: #6b7280;
+  font-size: 0.8rem;
+}
+
+.aviso-destino {
+  flex-wrap: wrap;
+}
+
+.aviso-escolha {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.8rem;
+  background: #fff;
+}
+
+.aviso-escolha-acoes {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.aviso-escolha-acoes input {
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+.aviso-escolha-acoes button {
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+  border-radius: 6px;
+  padding: 0.5rem 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.aviso-lista-motoristas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 16rem;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: 0.35rem;
+}
+
+.aviso-lista-motoristas label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.aviso-lista-motoristas label:hover {
+  background: #f3f4f6;
+}
+
+.aviso-lista-motoristas small {
+  margin-left: auto;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.aviso-status {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: #9ca3af;
+  flex: none;
+}
+
+.aviso-status--online {
+  background: #16a34a;
+}
+
+.aviso-vazio {
+  color: #6b7280;
+  padding: 0.5rem;
+}
+
+.avisos-enviados {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.avisos-enviados h4 {
+  margin: 0;
+  color: #374151;
+}
+
+.aviso-enviado {
+  border-left: 4px solid var(--cor-agencia-secundaria, #38bdf8);
+  background: #f9fafb;
+  border-radius: 6px;
+  padding: 0.7rem 0.9rem;
+}
+
+.aviso-enviado p {
+  margin: 0 0 0.35rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.aviso-enviado small {
+  color: #6b7280;
+}

@@ -1,4 +1,4 @@
-import { distribuirMarcadores, svgMoto } from './mapaMotoristas';
+import { COR_CAPACETE, distribuirMarcadores, svgMoto } from './mapaMotoristas';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as signalR from '@microsoft/signalr';
@@ -151,7 +151,7 @@ function atualizarMotoristaNaLista(listaAtual, dados) {
 function criarIconeMoto(motorista) {
   const status = motorista.statusMapa === 'em_corrida' ? 'em-corrida' : motorista.statusMapa === 'livre' ? 'livre' : 'offline';
   return L.divIcon({ className: 'monitoramento-moto-marker monitoramento-moto-marker--' + status,
-    iconSize: [64, 64], iconAnchor: [32, 55], html: svgMoto(motorista.emCorrida && motorista.etapaCorrida === 'Destino') });
+    iconSize: [64, 64], iconAnchor: [32, 55], html: svgMoto(motorista.emCorrida && motorista.etapaCorrida === 'Destino', COR_CAPACETE[motorista.statusMapa] || COR_CAPACETE.offline) });
 }
 
 function formatarData(valor) {

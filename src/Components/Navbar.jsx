@@ -257,7 +257,7 @@ export default function Navbar({ nomeAgencia }) {
   return (
     <nav className="navbar-container">
       <div className="navbar-logo">
-        <Link to="/painel" className="navbar-link-logo">
+        <Link to="/monitoramento" className="navbar-link-logo">
           <h1>{nomeExibido}</h1>
         </Link>
       </div>

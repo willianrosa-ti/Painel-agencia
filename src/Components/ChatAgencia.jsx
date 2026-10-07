@@ -3,11 +3,12 @@ import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router-dom';
 import * as signalR from '@microsoft/signalr';
 import { ativarPushAgencia } from '../Services/agenciaPushNotifications';
+import { acrescentarMensagem, juntarMensagens as juntar, lerConversa, salvarConversa, ultimasMensagens } from '../Services/chatLocal';
 import './ChatAgencia.css';
 
 const API = 'https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net';
-const juntar = (lista, novas) => [...new Map([...lista, ...novas].map(m => [m.id, m])).values()].sort((a, b) => a.id - b.id);
 const hora = data => new Date(/Z|[+-]\d\d:\d\d$/.test(data) ? data : `${data}Z`).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+const agenciaAtual = () => localStorage.getItem('idAgencia') || 'agencia';
 async function api(caminho, init = {}) {
   const res = await fetch(`${API}/api/Chat${caminho}`, { ...init, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('tokenAgencia')}`, ...init.headers } });
   if (!res.ok) throw new Error(res.status === 401 ? 'Sua sessão expirou. Entre novamente.' : 'Sem conexão com a conversa. Tente novamente.');
@@ -28,19 +29,24 @@ export default function ChatAgencia() {
   const [carregando, setCarregando] = useState(false);
   const [anteriores, setAnteriores] = useState(false);
   const [conectado, setConectado] = useState(false);
+  const [previas, setPrevias] = useState({});
   const selecionadoRef = useRef(null);
   const abertoRef = useRef(false);
   const historicoRef = useRef(null);
+  const campoRef = useRef(null);
   const envioRef = useRef(false);
   const acompanharRef = useRef(true);
   const alturaAnteriorRef = useRef(null);
   const historicoInicialRef = useRef(true);
+  const sincronizadoRef = useRef(0);
+  const conversaProntaRef = useRef(null);
   const rascunhosRef = useRef(new Map());
   const pendenteRef = useRef(new Map());
   const recebidasRef = useRef(new Set());
   const audioRef = useRef(null);
   const total = conversas.reduce((n, c) => n + c.naoLidas, 0);
 
+  const atualizarPrevias = useCallback(() => { ultimasMensagens(agenciaAtual()).then(setPrevias).catch(() => {}); }, []);
   const carregarConversas = useCallback(async () => {
     const conta = localStorage.getItem('tokenAgencia');
     try { const lista = await api('/conversas'); if (localStorage.getItem('tokenAgencia') === conta) setConversas(lista); } catch (e) { if (abertoRef.current) setErro(e.message); }
@@ -54,9 +60,19 @@ export default function ChatAgencia() {
     const conta = localStorage.getItem('tokenAgencia');
     try {
       const dados = await api(`/mensagens?motoristaId=${id}${antigas ? `&antesId=${antigas}` : ''}`);
+      let lista = dados.mensagens;
+      // Busca no servidor o que chegou entre a última mensagem guardada neste aparelho e as 60 mais recentes.
+      const sincronizado = antigas ? 0 : sincronizadoRef.current;
+      let temMais = dados.temAnteriores;
+      for (let paginas = 0; sincronizado > 0 && temMais && lista.length && lista[0].id > sincronizado && paginas < 10; paginas++) {
+        const pagina = await api(`/mensagens?motoristaId=${id}&antesId=${lista[0].id}`);
+        lista = [...pagina.mensagens, ...lista]; temMais = pagina.temAnteriores;
+      }
       if (selecionadoRef.current !== id || localStorage.getItem('tokenAgencia') !== conta) return;
-      setMensagens(lista => juntar(lista, dados.mensagens));
-      if (antigas || historicoInicialRef.current) setAnteriores(dados.temAnteriores);
+      setMensagens(atual => juntar(atual, lista));
+      if (antigas) setAnteriores(dados.temAnteriores);
+      else if (historicoInicialRef.current) setAnteriores(dados.temAnteriores && sincronizadoRef.current === 0);
+      if (!antigas && lista.length) sincronizadoRef.current = Math.max(sincronizadoRef.current, lista.at(-1).id);
       historicoInicialRef.current = false;
       if (abertoRef.current && dados.naoLidas) await ler(id, dados.mensagens.at(-1)?.id);
       setErro('');
@@ -64,15 +80,27 @@ export default function ChatAgencia() {
     finally { setCarregando(false); }
   }, [ler]);
 
-  const selecionar = useCallback(id => {
-    acompanharRef.current = true; historicoInicialRef.current = true; alturaAnteriorRef.current = null;
+  const selecionar = useCallback(async id => {
+    acompanharRef.current = true; historicoInicialRef.current = true; alturaAnteriorRef.current = null; sincronizadoRef.current = 0; conversaProntaRef.current = null;
     selecionadoRef.current = id; setSelecionado(id); setMensagens([]); setAnteriores(false);
-    setTexto(rascunhosRef.current.get(id) || ''); setCarregando(true); carregarMensagens(id);
+    setTexto(rascunhosRef.current.get(id) || ''); setCarregando(true);
+    const locais = await lerConversa(agenciaAtual(), id);
+    if (selecionadoRef.current !== id) return;
+    if (locais.length) { setMensagens(atual => juntar(locais, atual)); sincronizadoRef.current = locais.at(-1).id; }
+    conversaProntaRef.current = id;
+    carregarMensagens(id);
+    setTimeout(() => campoRef.current?.focus(), 0);
   }, [carregarMensagens]);
+
+  // Guarda neste aparelho o histórico da conversa aberta.
+  useEffect(() => {
+    if (!selecionado || conversaProntaRef.current !== selecionado || !mensagens.length) return;
+    salvarConversa(agenciaAtual(), selecionado, mensagens).then(atualizarPrevias);
+  }, [mensagens, selecionado, atualizarPrevias]);
 
   useEffect(() => {
     if (!ativo) {
-      abertoRef.current = false; selecionadoRef.current = null;
+      abertoRef.current = false; selecionadoRef.current = null; conversaProntaRef.current = null;
       setAberto(false); setSelecionado(null); setMensagens([]); setConversas([]); setTexto('');
       rascunhosRef.current.clear(); pendenteRef.current.clear();
       return;
@@ -82,12 +110,12 @@ export default function ChatAgencia() {
     const conexao = new signalR.HubConnectionBuilder().withUrl(`${API}/hub-corridas`, {
       accessTokenFactory: () => localStorage.getItem('tokenAgencia') || '',
     }).withAutomaticReconnect().build();
-    const atualizar = () => { carregarConversas(); if (abertoRef.current && selecionadoRef.current) carregarMensagens(selecionadoRef.current); };
+    const atualizar = () => { carregarConversas(); if (abertoRef.current && selecionadoRef.current && conversaProntaRef.current === selecionadoRef.current) carregarMensagens(selecionadoRef.current); };
     conexao.on('ChatMensagem', m => {
-      if (m.motoristaId === selecionadoRef.current) {
+      if (m.motoristaId === selecionadoRef.current && conversaProntaRef.current === m.motoristaId) {
         setMensagens(lista => juntar(lista, [m]));
         if (abertoRef.current) ler(m.motoristaId, m.id).catch(() => {});
-      }
+      } else acrescentarMensagem(agenciaAtual(), m.motoristaId, m).then(atualizarPrevias).catch(() => {});
       carregarConversas();
       if (m.remetente !== 'Motorista' || recebidasRef.current.has(m.id)) return;
       recebidasRef.current.add(m.id);
@@ -114,14 +142,14 @@ export default function ChatAgencia() {
       catch { if (!encerrado) tentativa = setTimeout(iniciar, 5000); }
     };
     conexao.onclose(() => { setConectado(false); if (!encerrado) tentativa = setTimeout(iniciar, 5000); });
-    iniciar(); carregarConversas();
+    iniciar(); carregarConversas(); atualizarPrevias();
     const intervalo = setInterval(() => { if (document.visibilityState === 'visible') atualizar(); }, 15000);
     const visibilidade = () => { if (document.visibilityState === 'visible') atualizar(); };
     const abrir = e => { abertoRef.current = true; setAberto(true); if (e.detail?.motoristaId) selecionar(Number(e.detail.motoristaId)); };
     document.addEventListener('visibilitychange', visibilidade);
     window.addEventListener('abrir-chat-motorista', abrir);
     return () => { encerrado = true; clearTimeout(tentativa); clearInterval(intervalo); conexao.stop(); document.removeEventListener('visibilitychange', visibilidade); window.removeEventListener('abrir-chat-motorista', abrir); };
-  }, [ativo, carregarConversas, carregarMensagens, ler, selecionar]);
+  }, [ativo, carregarConversas, carregarMensagens, ler, selecionar, atualizarPrevias]);
 
   useEffect(() => {
     const id = Number(new URLSearchParams(location.search).get('chat'));
@@ -147,13 +175,13 @@ export default function ChatAgencia() {
       if (selecionadoRef.current === id) { setMensagens(lista => juntar(lista, [m])); setTexto(''); }
       rascunhosRef.current.delete(id); pendenteRef.current.delete(id); carregarConversas();
     } catch (e) { setErro(`${e.message} A mensagem foi preservada.`); }
-    finally { envioRef.current = false; setEnviando(false); }
+    finally { envioRef.current = false; setEnviando(false); campoRef.current?.focus(); }
   }
 
   function alternar() {
     if (!audioRef.current && window.AudioContext) audioRef.current = new AudioContext();
     audioRef.current?.resume().catch(() => {});
-    abertoRef.current = !aberto; setAberto(!aberto); if (!aberto) carregarConversas();
+    abertoRef.current = !aberto; setAberto(!aberto); if (!aberto) { carregarConversas(); atualizarPrevias(); }
   }
   if (!ativo) return null;
   const motorista = conversas.find(c => c.motoristaId === selecionado);
@@ -161,15 +189,16 @@ export default function ChatAgencia() {
     {aberto && <section className={`chat-agencia-window ${selecionado ? 'chat-agencia-window--selected' : ''}`} role="dialog" aria-label="Mensagens com motoristas" onKeyDown={e => { if (e.key === 'Escape') alternar(); }}>
       <header className="chat-agencia-header"><div><strong>Conversas</strong><small><i className={conectado ? 'conectado' : ''} />{conectado ? 'Em tempo real' : 'Reconectando…'}</small></div><div className="chat-header-actions"><button title="Ativar notificações do dispositivo" aria-label="Ativar notificações" onClick={async () => { try { await ativarPushAgencia(localStorage.getItem('tokenAgencia')); setErro(''); } catch (e) { setErro(e.message); } }}><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M9 21h6" /></svg></button><button aria-label="Fechar conversas" onClick={alternar}>×</button></div></header>
       <div className="chat-agencia-body">
-        <aside className="chat-agencia-contacts"><input aria-label="Buscar motorista" placeholder="Buscar motorista…" value={busca} onChange={e => setBusca(e.target.value)} /><div className="chat-contact-list">{conversas.filter(c => c.nome.toLowerCase().includes(busca.toLowerCase())).map(c => <button key={c.motoristaId} className={selecionado === c.motoristaId ? 'selected' : ''} onClick={() => selecionar(c.motoristaId)}><span className="chat-contact-avatar">{c.nome.slice(0, 1)}</span><span><strong>{c.nome}</strong><small>{c.ultimaMensagem || 'Iniciar conversa'}</small></span>{c.naoLidas > 0 && <b>{c.naoLidas}</b>}</button>)}</div></aside>
+        <aside className="chat-agencia-contacts"><input aria-label="Buscar motorista" placeholder="Buscar motorista…" value={busca} onChange={e => setBusca(e.target.value)} /><div className="chat-contact-list">{conversas.filter(c => c.nome.toLowerCase().includes(busca.toLowerCase())).map(c => <button key={c.motoristaId} className={selecionado === c.motoristaId ? 'selected' : ''} onClick={() => selecionar(c.motoristaId)}><span className="chat-contact-avatar">{c.nome.slice(0, 1)}</span><span><strong>{c.nome}</strong><small>{c.ultimaMensagem || previas[c.motoristaId] || 'Iniciar conversa'}</small></span>{c.naoLidas > 0 && <b>{c.naoLidas}</b>}</button>)}</div></aside>
         <div className="chat-agencia-conversation">{motorista ? <>
-          <div className="chat-person-header"><button className="chat-back" onClick={() => { selecionadoRef.current = null; setSelecionado(null); }} aria-label="Voltar aos motoristas">←</button><strong>{motorista.nome}</strong><span>Motorista</span></div>
+          <div className="chat-person-header"><button className="chat-back" onClick={() => { selecionadoRef.current = null; conversaProntaRef.current = null; setSelecionado(null); }} aria-label="Voltar aos motoristas">←</button><strong>{motorista.nome}</strong><span>Motorista</span></div>
           <div className="chat-agencia-history" ref={historicoRef} aria-live="polite" onScroll={e => { const el = e.currentTarget; acompanharRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 100; }}>
             {anteriores && <button className="chat-older" disabled={carregando} onClick={() => { alturaAnteriorRef.current = historicoRef.current?.scrollHeight ?? null; acompanharRef.current = false; setCarregando(true); carregarMensagens(selecionado, mensagens[0]?.id); }}>Carregar anteriores</button>}
             {!mensagens.length && <p className="chat-empty">{carregando ? 'Carregando…' : 'Este é o início da conversa. Envie uma mensagem.'}</p>}
             {mensagens.map(m => <div key={m.id} className={`chat-bubble ${m.remetente === 'Agencia' ? 'sent' : 'received'}`}><p>{m.texto}</p><small>{hora(m.criadoEm)}{m.remetente === 'Agencia' ? m.lidaEm ? ' · Lida' : ' · Enviada' : ''}</small></div>)}
           </div>
-          <form className="chat-agencia-compose" onSubmit={enviar}><textarea aria-label={`Mensagem para ${motorista.nome}`} placeholder="Escreva uma mensagem…" value={texto} disabled={enviando} maxLength={2000} rows={2} onChange={e => { setTexto(e.target.value); rascunhosRef.current.set(selecionado, e.target.value); }} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(e); } }} /><button disabled={enviando || !texto.trim()} aria-label="Enviar mensagem">{enviando ? '…' : '↑'}</button></form>
+          {/* readOnly (e não disabled) durante o envio: o campo mantém o foco e o próximo texto já pode ser digitado após o Enter. */}
+          <form className="chat-agencia-compose" onSubmit={enviar}><textarea ref={campoRef} aria-label={`Mensagem para ${motorista.nome}`} placeholder="Escreva uma mensagem…" value={texto} readOnly={enviando} maxLength={2000} rows={2} onChange={e => { setTexto(e.target.value); rascunhosRef.current.set(selecionado, e.target.value); }} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(e); } }} /><button disabled={enviando || !texto.trim()} aria-label="Enviar mensagem">{enviando ? '…' : '↑'}</button></form>
         </> : <div className="chat-empty"><span>↗</span><strong>Fale com sua frota</strong><p>Escolha um motorista para iniciar uma conversa.</p></div>}</div>
       </div>
       {erro && <p className="chat-agencia-error" role="alert">{erro}</p>}

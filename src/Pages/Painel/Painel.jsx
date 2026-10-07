@@ -1,14 +1,15 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../Components/Navbar';
 import { useFeedback } from '../../Components/Feedback/useFeedback';
+import NotificarMotoristas from './NotificarMotoristas';
 import './Painel.css';
 
 const API_BASE = 'https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net';
 
 const SECOES_OPERAR = [
   { id: 'resumo', label: 'Resumo' },
-  { id: 'nova-corrida', label: 'Nova corrida' },
+  { id: 'notificar', label: 'Notificar motoristas' },
   { id: 'radar', label: 'Corridas' }
 ];
 
@@ -28,6 +29,11 @@ function normalizarStatusParaClasse(status) {
     .replace(/\s+/g, '-');
 }
 
+// Corrida na fila de um motorista (começa quando ele terminar a atual) aparece como Pendente.
+function statusExibido(status) {
+  return status === 'Aguardando Motorista' ? 'Pendente' : status;
+}
+
 function aplicarTemaAgencia() {
   const corPrimaria = localStorage.getItem('corAgenciaPrimaria') || '#111827';
   const corSecundaria = localStorage.getItem('corAgenciaSecundaria') || '#38bdf8';
@@ -39,7 +45,7 @@ function aplicarTemaAgencia() {
 }
 
 export default function Painel() {
-  const { sucesso, erro: mostrarErro, aviso, confirmar } = useFeedback();
+  const { sucesso, erro: mostrarErro, confirmar } = useFeedback();
   const [nomeAgencia, setNomeAgencia] = useState('');
   const [dadosResumo, setDadosResumo] = useState(null);
   const navegar = useNavigate();
@@ -48,25 +54,8 @@ export default function Painel() {
   const [corridasAtivas, setCorridasAtivas] = useState([]);
   const [dataFiltroRadar, setDataFiltroRadar] = useState(obterDataHojeInput());
 
-  const [telPassageiro, setTelPassageiro] = useState('');
-  const [nomePassageiro, setNomePassageiro] = useState('');
-  const [endBusca, setEndBusca] = useState('');
-  const [endDestino, setEndDestino] = useState('');
-  const [tipoValor, setTipoValor] = useState('7');
-  const [valorPersonalizado, setValorPersonalizado] = useState('');
-  const [motoristaExclusivoId, setMotoristaExclusivoId] = useState('');
-  const [enviandoCorrida, setEnviandoCorrida] = useState(false);
   const [cancelandoCorridaId, setCancelandoCorridaId] = useState(null);
-  const [secaoOperarAtiva, setSecaoOperarAtiva] = useState('nova-corrida');
-
-  const valorCorrida = useMemo(() => {
-    if (tipoValor === 'custom') {
-      const valorConvertido = Number(String(valorPersonalizado).replace(',', '.'));
-      return Number.isFinite(valorConvertido) ? valorConvertido : 0;
-    }
-
-    return Number(tipoValor);
-  }, [tipoValor, valorPersonalizado]);
+  const [secaoOperarAtiva, setSecaoOperarAtiva] = useState('notificar');
 
   const buscarTudo = useCallback(async () => {
     const tokenSalvo = localStorage.getItem('tokenAgencia');
@@ -114,76 +103,6 @@ export default function Painel() {
     const intervalo = setInterval(buscarTudo, 5000);
     return () => clearInterval(intervalo);
   }, [buscarTudo, navegar]);
-
-  const limparFormularioCorrida = () => {
-    setTelPassageiro('');
-    setNomePassageiro('');
-    setEndBusca('');
-    setEndDestino('');
-    setTipoValor('7');
-    setValorPersonalizado('');
-    setMotoristaExclusivoId('');
-  };
-
-  const handleDespacharCorrida = async (e) => {
-    e.preventDefault();
-
-    if (valorCorrida <= 0) {
-      aviso('Informe um valor válido para a corrida.', 'Valor inválido');
-      return;
-    }
-
-    const token = localStorage.getItem('tokenAgencia');
-    const motoristaSelecionado = frota.find((m) => String(m.id) === String(motoristaExclusivoId));
-
-    setEnviandoCorrida(true);
-
-    try {
-      const resposta = await fetch(`${API_BASE}/api/Corrida/nova`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          telefonePassageiro: telPassageiro,
-          nomePassageiro,
-          enderecoBusca: endBusca,
-          enderecoDestino: endDestino,
-          valorDaCorrida: valorCorrida,
-          motoristaExclusivoId: motoristaExclusivoId ? Number(motoristaExclusivoId) : null
-        })
-      });
-
-      const textoResposta = await resposta.text();
-
-      if (!resposta.ok) {
-        let mensagemErro = textoResposta;
-        try {
-          mensagemErro = JSON.parse(textoResposta).mensagem || mensagemErro;
-        } catch {
-          mensagemErro = mensagemErro || 'Não foi possível despachar a corrida.';
-        }
-        mostrarErro(mensagemErro || 'Não foi possível despachar a corrida.', 'Erro ao despachar corrida');
-        return;
-      }
-
-      
-      sucesso(
-        motoristaSelecionado
-          ? 'Corrida direcionada com sucesso.'
-          : 'Corrida despachada com sucesso.'
-      );
-
-      limparFormularioCorrida();
-      buscarTudo();
-    } catch (erro) {
-      console.error('Erro ao despachar corrida:', erro);
-      mostrarErro('Erro de conexão ao despachar corrida.');
-    } finally {
-      setEnviandoCorrida(false);
-    }
-  };
 
   const handleCancelarCorrida = async (corrida) => {
     if (!corrida || corrida.status === 'Concluída' || corrida.status === 'Cancelada') return;
@@ -233,9 +152,8 @@ export default function Painel() {
 
   const qtdEmAndamento = corridasAtivas.filter((c) => c.status === 'Em Andamento').length;
   const qtdConcluidas = corridasAtivas.filter((c) => c.status === 'Concluída').length;
-  const qtdPendentes = corridasAtivas.filter((c) => c.status === 'Pendente').length;
+  const qtdPendentes = corridasAtivas.filter((c) => statusExibido(c.status) === 'Pendente').length;
   const qtdCanceladas = corridasAtivas.filter((c) => c.status === 'Cancelada').length;
-  const motoristasDisponiveisParaDirecionar = frota.filter((m) => !m.suspenso);
 
   return (
     <div className="painel-fundo">
@@ -274,57 +192,8 @@ export default function Painel() {
           )}
         </div>
 
-        <div className={`cartao-informativo cartao-nova-corrida painel-secao-operar ${secaoOperarAtiva === 'nova-corrida' ? 'painel-secao-operar--ativa' : ''}`}>
-          <h3 className="titulo-verde">🚀 Nova Corrida</h3>
-          <form onSubmit={handleDespacharCorrida} className="formulario-corrida">
-            <div className="grupo-inputs-duplo">
-              <input type="tel" inputMode="numeric" autoComplete="tel" placeholder="Telefone" value={telPassageiro} onChange={(e) => setTelPassageiro(e.target.value)} required className="input-pequeno" />
-              <input type="text" placeholder="Nome do Passageiro" value={nomePassageiro} onChange={(e) => setNomePassageiro(e.target.value)} required className="input-grande" />
-            </div>
-
-            <input type="text" placeholder="Endereço de Busca" value={endBusca} onChange={(e) => setEndBusca(e.target.value)} required className="input-padrao" />
-            <input type="text" placeholder="Destino" value={endDestino} onChange={(e) => setEndDestino(e.target.value)} required className="input-padrao" />
-
-            <div className="grupo-radio-valor grupo-radio-valor-expandido">
-              <span className="label-valor">Valor:</span>
-              <label className="opcao-radio"><input type="radio" value="7" checked={tipoValor === '7'} onChange={() => setTipoValor('7')} /> R$ 7,00</label>
-              <label className="opcao-radio"><input type="radio" value="12" checked={tipoValor === '12'} onChange={() => setTipoValor('12')} /> R$ 12,00</label>
-              <label className="opcao-radio"><input type="radio" value="custom" checked={tipoValor === 'custom'} onChange={() => setTipoValor('custom')} /> Outro valor</label>
-              {tipoValor === 'custom' && (
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="Ex: 15,00"
-                  value={valorPersonalizado}
-                  onChange={(e) => setValorPersonalizado(e.target.value)}
-                  className="input-valor-personalizado"
-                  required
-                />
-              )}
-            </div>
-
-            <div className="grupo-direcionamento">
-              <label className="label-valor" htmlFor="motoristaExclusivo">Direcionar corrida:</label>
-              <select
-                id="motoristaExclusivo"
-                value={motoristaExclusivoId}
-                onChange={(e) => setMotoristaExclusivoId(e.target.value)}
-                className="select-padrao"
-              >
-                <option value="">Todos os motoristas disponíveis</option>
-                {motoristasDisponiveisParaDirecionar.map((motorista) => (
-                  <option key={motorista.id} value={motorista.id}>
-                    {motorista.nome} - {motorista.placaMoto}{motorista.online ? ' (online)' : ' (offline)'}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <button type="submit" className="botao-despachar" disabled={enviandoCorrida}>
-              {enviandoCorrida ? 'DESPACHANDO...' : 'DESPACHAR'}
-            </button>
-          </form>
+        <div className={`cartao-informativo cartao-nova-corrida painel-secao-operar ${secaoOperarAtiva === 'notificar' ? 'painel-secao-operar--ativa' : ''}`}>
+          <NotificarMotoristas frota={frota} />
         </div>
 
         <div className={`cartao-informativo cartao-radar painel-secao-operar ${secaoOperarAtiva === 'radar' ? 'painel-secao-operar--ativa' : ''}`}>
@@ -370,8 +239,8 @@ export default function Painel() {
                     </td>
                     <td data-label="Status / Ação" className="celula-status-acao">
                       <div className="radar-status-acoes">
-                        <span className={`badge-status status-${normalizarStatusParaClasse(c.status)}`}>
-                          {c.status}
+                        <span className={`badge-status status-${normalizarStatusParaClasse(statusExibido(c.status))}`}>
+                          {statusExibido(c.status)}
                         </span>
 
                         {c.status !== 'Concluída' && c.status !== 'Cancelada' && (

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Login.css';
 
@@ -122,6 +122,11 @@ export default function Login() {
 
   const navegar = useNavigate();
 
+  // Com a sessão salva, o app abre direto em Monitorar. Se ela tiver expirado, o Monitorar limpa a sessão e volta para cá.
+  useEffect(() => {
+    if (localStorage.getItem('tokenAgencia')) navegar('/monitoramento', { replace: true });
+  }, [navegar]);
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setMensagemErro('');
@@ -170,7 +175,7 @@ export default function Login() {
 
       salvarPerfilAgencia(dados);
 
-      navegar('/painel', { replace: true });
+      navegar('/monitoramento', { replace: true });
     } catch (erro) {
       console.error('Erro na comunicação com a API:', erro);
       setMensagemErro('Não foi possível conectar ao servidor. Tente novamente em instantes.');

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { distribuirMarcadores, svgMoto } from '../src/Pages/Monitoramento/mapaMotoristas.js';
+import { COR_CAPACETE, COR_CAPACETE_PASSAGEIRO, distribuirMarcadores, svgMoto } from '../src/Pages/Monitoramento/mapaMotoristas.js';
 
 test('motorista isolado mantém exatamente a posição original', () => {
   assert.deepEqual(distribuirMarcadores([{ id: 1, x: 15, y: 25 }]), [{ id: 1, x: 15, y: 25 }]);
@@ -21,5 +21,10 @@ test('expandir um grupo não sobrepõe motoristas vizinhos', () => {
     assert.ok(Math.hypot(r[i].x - r[j].x, r[i].y - r[j].y) >= 63.99);
 });
 test('ícone com passageiro inclui o segundo capacete', () => {
-  assert.ok(!svgMoto(false).includes('#dc4545')); assert.ok(svgMoto(true).includes('#dc4545'));
+  assert.ok(!svgMoto(false).includes(COR_CAPACETE_PASSAGEIRO)); assert.ok(svgMoto(true).includes(COR_CAPACETE_PASSAGEIRO));
+});
+test('capacete do piloto fica verde livre, vermelho em corrida e mantém o cinza offline', () => {
+  assert.ok(svgMoto(false, COR_CAPACETE.livre).includes('fill="#16a34a"'));
+  assert.ok(svgMoto(true, COR_CAPACETE.em_corrida).includes('fill="#dc2626"'));
+  assert.ok(svgMoto(false).includes('fill="#f1f5f9"'));
 });

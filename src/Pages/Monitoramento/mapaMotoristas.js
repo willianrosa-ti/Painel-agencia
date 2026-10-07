@@ -37,15 +37,20 @@ export function distribuirMarcadores(pontos, distancia = 56) {
   return livres;
 }
 
-export function svgMoto(comPassageiro = false) {
+// Cor do capacete do piloto conforme o status no mapa; offline mantém o visual cinza de antes.
+export const COR_CAPACETE = { livre: '#16a34a', em_corrida: '#dc2626', offline: '#f1f5f9' };
+// Capacete do passageiro em branco, para não se confundir com o vermelho do piloto em corrida.
+export const COR_CAPACETE_PASSAGEIRO = '#ffffff';
+
+export function svgMoto(comPassageiro = false, corCapacete = COR_CAPACETE.offline) {
   return `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
     <ellipse cx="41" cy="72" rx="31" ry="5" fill="#0f172a" opacity=".14"/>
     <g stroke="#17202d" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round">
-      ${comPassageiro ? '<path d="M46 31Q53 26 59 34L63 48 51 51 44 40Z" fill="#475569"/><path d="M53 47L59 55 48 64 44 60 51 54 44 51" fill="#334155"/><circle cx="53" cy="22" r="10" fill="#dc4545"/><path d="M44 21Q54 25 62 19L62 26Q55 31 46 28Z" fill="#263443"/>' : ''}
+      ${comPassageiro ? `<path d="M46 31Q53 26 59 34L63 48 51 51 44 40Z" fill="#475569"/><path d="M53 47L59 55 48 64 44 60 51 54 44 51" fill="#334155"/><circle cx="53" cy="22" r="10" fill="${COR_CAPACETE_PASSAGEIRO}"/><path d="M44 21Q54 25 62 19L62 26Q55 31 46 28Z" fill="#263443"/>` : ''}
       <circle cx="19" cy="62" r="12" fill="#25313c"/><circle cx="19" cy="62" r="6" fill="#cbd5e1"/><circle cx="61" cy="62" r="11" fill="#25313c"/><circle cx="61" cy="62" r="5" fill="#cbd5e1"/>
       <path d="M19 61L29 44 49 48 62 62 35 61Z" fill="#8d9ca8"/><path d="M31 50L42 42 57 45 54 53 37 57Z" fill="#374151"/><path d="M45 44L63 44" stroke-width="5"/><path d="M19 62L26 39 20 37" fill="none" stroke="#e2e8f0" stroke-width="5"/>
       <path d="M37 30Q43 26 48 34L45 46 32 49 28 43Z" fill="#243444"/><path d="M43 46L48 53 35 66 30 63 40 54 30 51" fill="#3f6078"/><path d="M36 34L29 42 20 42" fill="none" stroke="#273647" stroke-width="7"/>
-      <circle cx="37" cy="21" r="11" fill="#f1f5f9"/><path d="M27 21Q36 25 46 19L46 26Q37 32 29 28Z" fill="#334155"/>
+      <circle cx="37" cy="21" r="11" fill="${corCapacete}"/><path d="M27 21Q36 25 46 19L46 26Q37 32 29 28Z" fill="#334155"/>
       <path d="M12 49Q18 43 24 48L23 52 14 54Z" fill="#f8fafc"/><path d="M56 56L70 54" stroke="#aab7c4" stroke-width="4"/>
     </g></svg>`;
 }
