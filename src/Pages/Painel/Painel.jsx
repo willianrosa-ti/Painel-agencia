@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../../Components/Navbar';
 import { useFeedback } from '../../Components/Feedback/useFeedback';
 import NotificarMotoristas from './NotificarMotoristas';
+import AudioPlayer from '../../Components/AudioPlayer';
 import './Painel.css';
 
 const API_BASE = 'https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net';
@@ -228,7 +229,7 @@ export default function Painel() {
                 {corridasAtivas.map((c) => (
                   <tr key={c.id}>
                     <td data-label="Passageiro"><strong>{c.passageiro}</strong></td>
-                    <td data-label="Trajeto" className="celula-trajeto">De: {c.busca}<br />Para: {c.destino}</td>
+                    <td data-label="Trajeto" className="celula-trajeto">{c.audioId ? <AudioPlayer audioId={c.audioId} /> : <>De: {c.busca}<br />Para: {c.destino}</>}</td>
                     <td data-label="Valor" className="celula-valor">R$ {Number(c.valor).toFixed(2)}</td>
                     <td data-label="Motorista">
                       <span className={c.motorista === 'Buscando motorista...' || c.motorista === 'Buscando...' ? 'motorista-buscando' : 'motorista-encontrado'}>

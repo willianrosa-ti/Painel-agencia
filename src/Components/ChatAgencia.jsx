@@ -4,6 +4,9 @@ import { useLocation } from 'react-router-dom';
 import * as signalR from '@microsoft/signalr';
 import { ativarPushAgencia } from '../Services/agenciaPushNotifications';
 import { acrescentarMensagem, juntarMensagens as juntar, lerConversa, salvarConversa, ultimasMensagens } from '../Services/chatLocal';
+import { DURACAO_MAXIMA_MS, enviarAudio, formatarDuracao, obterAudio } from '../Services/audio';
+import { useGravacao } from '../Services/useGravacao';
+import AudioPlayer from './AudioPlayer';
 import './ChatAgencia.css';
 
 const API = 'https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net';
@@ -30,6 +33,9 @@ export default function ChatAgencia() {
   const [anteriores, setAnteriores] = useState(false);
   const [conectado, setConectado] = useState(false);
   const [previas, setPrevias] = useState({});
+  const [audioPendente, setAudioPendente] = useState(null);
+  const gravacao = useGravacao();
+  const { cancelar: cancelarGravacao } = gravacao;
   const selecionadoRef = useRef(null);
   const abertoRef = useRef(false);
   const historicoRef = useRef(null);
@@ -82,6 +88,7 @@ export default function ChatAgencia() {
 
   const selecionar = useCallback(async id => {
     acompanharRef.current = true; historicoInicialRef.current = true; alturaAnteriorRef.current = null; sincronizadoRef.current = 0; conversaProntaRef.current = null;
+    cancelarGravacao(); setAudioPendente(null);
     selecionadoRef.current = id; setSelecionado(id); setMensagens([]); setAnteriores(false);
     setTexto(rascunhosRef.current.get(id) || ''); setCarregando(true);
     const locais = await lerConversa(agenciaAtual(), id);
@@ -90,7 +97,18 @@ export default function ChatAgencia() {
     conversaProntaRef.current = id;
     carregarMensagens(id);
     setTimeout(() => campoRef.current?.focus(), 0);
-  }, [carregarMensagens]);
+  }, [carregarMensagens, cancelarGravacao]);
+
+  // Áudios recebidos também ficam guardados neste aparelho, mesmo antes de serem ouvidos.
+  useEffect(() => {
+    mensagens.forEach(m => { if (m.audioId) obterAudio(m.audioId).catch(() => {}); });
+  }, [mensagens]);
+
+  // Gravação no limite de tempo: para e deixa pronta para enviar.
+  useEffect(() => {
+    if (!gravacao.gravando || gravacao.tempo < DURACAO_MAXIMA_MS) return;
+    gravacao.parar().then(g => setAudioPendente({ ...g, clienteId: crypto.randomUUID() })).catch(e => setErro(e.message));
+  }, [gravacao]);
 
   // Guarda neste aparelho o histórico da conversa aberta.
   useEffect(() => {
@@ -116,6 +134,7 @@ export default function ChatAgencia() {
         setMensagens(lista => juntar(lista, [m]));
         if (abertoRef.current) ler(m.motoristaId, m.id).catch(() => {});
       } else acrescentarMensagem(agenciaAtual(), m.motoristaId, m).then(atualizarPrevias).catch(() => {});
+      if (m.audioId) obterAudio(m.audioId).catch(() => {});
       carregarConversas();
       if (m.remetente !== 'Motorista' || recebidasRef.current.has(m.id)) return;
       recebidasRef.current.add(m.id);
@@ -178,6 +197,36 @@ export default function ChatAgencia() {
     finally { envioRef.current = false; setEnviando(false); campoRef.current?.focus(); }
   }
 
+  async function gravarAudio() {
+    setErro('');
+    try { await gravacao.comecar(); } catch (e) { setErro(e.message); }
+  }
+
+  function descartarAudio() {
+    cancelarGravacao();
+    setAudioPendente(null);
+    campoRef.current?.focus();
+  }
+
+  async function enviarAudioAtual() {
+    const id = selecionadoRef.current;
+    if (!id || envioRef.current) return;
+    let pendente = audioPendente;
+    if (gravacao.gravando) {
+      try { pendente = { ...(await gravacao.parar()), clienteId: crypto.randomUUID() }; setAudioPendente(pendente); }
+      catch (e) { setErro(e.message); return; }
+    }
+    if (!pendente) return;
+    envioRef.current = true; setEnviando(true); setErro('');
+    try {
+      if (!pendente.audioId) { pendente = { ...pendente, audioId: (await enviarAudio(pendente, id)).id }; setAudioPendente(pendente); }
+      const m = await api('/mensagens', { method: 'POST', body: JSON.stringify({ motoristaId: id, clienteId: pendente.clienteId, audioId: pendente.audioId }) });
+      if (selecionadoRef.current === id) setMensagens(lista => juntar(lista, [m]));
+      setAudioPendente(null); carregarConversas();
+    } catch (e) { setErro(`${e.message} O áudio foi preservado.`); }
+    finally { envioRef.current = false; setEnviando(false); }
+  }
+
   function alternar() {
     if (!audioRef.current && window.AudioContext) audioRef.current = new AudioContext();
     audioRef.current?.resume().catch(() => {});
@@ -195,10 +244,19 @@ export default function ChatAgencia() {
           <div className="chat-agencia-history" ref={historicoRef} aria-live="polite" onScroll={e => { const el = e.currentTarget; acompanharRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 100; }}>
             {anteriores && <button className="chat-older" disabled={carregando} onClick={() => { alturaAnteriorRef.current = historicoRef.current?.scrollHeight ?? null; acompanharRef.current = false; setCarregando(true); carregarMensagens(selecionado, mensagens[0]?.id); }}>Carregar anteriores</button>}
             {!mensagens.length && <p className="chat-empty">{carregando ? 'Carregando…' : 'Este é o início da conversa. Envie uma mensagem.'}</p>}
-            {mensagens.map(m => <div key={m.id} className={`chat-bubble ${m.remetente === 'Agencia' ? 'sent' : 'received'}`}><p>{m.texto}</p><small>{hora(m.criadoEm)}{m.remetente === 'Agencia' ? m.lidaEm ? ' · Lida' : ' · Enviada' : ''}</small></div>)}
+            {mensagens.map(m => <div key={m.id} className={`chat-bubble ${m.remetente === 'Agencia' ? 'sent' : 'received'}${m.audioId ? ' chat-bubble--audio' : ''}`}>{m.audioId ? <AudioPlayer audioId={m.audioId} /> : <p>{m.texto}</p>}<small>{hora(m.criadoEm)}{m.remetente === 'Agencia' ? m.lidaEm ? ' · Lida' : ' · Enviada' : ''}</small></div>)}
           </div>
           {/* readOnly (e não disabled) durante o envio: o campo mantém o foco e o próximo texto já pode ser digitado após o Enter. */}
-          <form className="chat-agencia-compose" onSubmit={enviar}><textarea ref={campoRef} aria-label={`Mensagem para ${motorista.nome}`} placeholder="Escreva uma mensagem…" value={texto} readOnly={enviando} maxLength={2000} rows={2} onChange={e => { setTexto(e.target.value); rascunhosRef.current.set(selecionado, e.target.value); }} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(e); } }} /><button disabled={enviando || !texto.trim()} aria-label="Enviar mensagem">{enviando ? '…' : '↑'}</button></form>
+          <form className="chat-agencia-compose" onSubmit={enviar}>
+            {gravacao.gravando ? <div className="chat-gravacao" aria-live="polite"><span className="chat-gravacao-ponto" aria-hidden="true" />Gravando {formatarDuracao(gravacao.tempo)}</div>
+              : audioPendente ? <div className="chat-gravacao"><AudioPlayer blob={audioPendente.blob} /></div>
+              : <textarea ref={campoRef} aria-label={`Mensagem para ${motorista.nome}`} placeholder="Escreva uma mensagem…" value={texto} readOnly={enviando} maxLength={2000} rows={2} onChange={e => { setTexto(e.target.value); rascunhosRef.current.set(selecionado, e.target.value); }} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(e); } }} />}
+            {gravacao.gravando || audioPendente ? <>
+              <button type="button" className="chat-descartar" onClick={descartarAudio} disabled={enviando} aria-label="Descartar áudio">🗑</button>
+              <button type="button" onClick={enviarAudioAtual} disabled={enviando} aria-label="Enviar áudio">{enviando ? '…' : '↑'}</button>
+            </> : texto.trim() ? <button disabled={enviando} aria-label="Enviar mensagem">{enviando ? '…' : '↑'}</button>
+              : <button type="button" className="chat-microfone" onClick={gravarAudio} aria-label="Gravar áudio">🎤</button>}
+          </form>
         </> : <div className="chat-empty"><span>↗</span><strong>Fale com sua frota</strong><p>Escolha um motorista para iniciar uma conversa.</p></div>}</div>
       </div>
       {erro && <p className="chat-agencia-error" role="alert">{erro}</p>}

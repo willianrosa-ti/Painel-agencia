@@ -13,3 +13,11 @@ test('histórico do computador mantém mensagens já apagadas do servidor e a co
   assert.equal(juntas[1].lidaEm, '2026-10-06T10:05:00Z');
   assert.equal(juntarMensagens(juntas, [msg(4, { lidaEm: null })])[1].lidaEm, '2026-10-06T10:05:00Z');
 });
+
+test('duração do áudio aparece como minutos e segundos', async () => {
+  const { formatarDuracao } = await import('../src/Services/audio.js');
+  assert.equal(formatarDuracao(0), '0:00');
+  assert.equal(formatarDuracao(9_400), '0:09');
+  assert.equal(formatarDuracao(125_000), '2:05');
+  assert.equal(formatarDuracao(undefined), '0:00');
+});

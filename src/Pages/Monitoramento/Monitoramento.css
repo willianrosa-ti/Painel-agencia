@@ -657,3 +657,34 @@ body.app-agencia-ios .monitoramento-legenda {
 .monitoramento-moto-marker { background: transparent !important; border: 0 !important; box-shadow: none !important; }
 .monitoramento-moto-marker svg { width: 64px; height: 64px; filter: drop-shadow(0 2px 2px #0f172a50); }
 .monitoramento-moto-marker--offline svg { filter: grayscale(1) drop-shadow(0 2px 2px #0f172a30); opacity: .65; }
+
+/* --- Despacho: digitar endereço ou áudio --- */
+.monitoramento-modos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem;
+  background: #f1f5f9;
+  border-radius: 10px;
+  padding: 0.3rem;
+}
+
+.monitoramento-modos button {
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  padding: 0.55rem 0.5rem;
+  font-weight: 700;
+  color: #475569;
+  cursor: pointer;
+}
+
+.monitoramento-modos button.ativo {
+  background: #ffffff;
+  color: #111827;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.15);
+}
+
+.monitoramento-audio-corrida {
+  display: block;
+  margin-top: 0.5rem;
+}

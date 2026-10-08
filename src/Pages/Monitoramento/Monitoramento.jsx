@@ -6,6 +6,9 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import Navbar from '../../Components/Navbar';
 import { useFeedback } from '../../Components/Feedback/useFeedback';
+import AudioPlayer from '../../Components/AudioPlayer';
+import GravadorAudio from '../../Components/GravadorAudio';
+import { enviarAudio } from '../../Services/audio';
 import './Monitoramento.css';
 
 const API_BASE = 'https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net';
@@ -101,6 +104,7 @@ function normalizarMotorista(dados) {
     corridaAtivaLongitudeBusca: dados.corridaAtivaLongitudeBusca ?? null,
     corridaAtivaLatitudeDestino: dados.corridaAtivaLatitudeDestino ?? null,
     corridaAtivaLongitudeDestino: dados.corridaAtivaLongitudeDestino ?? null,
+    corridaAtivaAudioId: dados.corridaAtivaAudioId ?? null,
     statusMapa: dados.statusMapa || (dados.emCorrida ? 'em_corrida' : dados.online ? 'livre' : 'offline')
   };
 }
@@ -200,7 +204,9 @@ export default function Monitoramento() {
   const [nomePassageiro, setNomePassageiro] = useState('');
   const [endBusca, setEndBusca] = useState('');
   const [endDestino, setEndDestino] = useState('');
-  const [tipoValor, setTipoValor] = useState('7');
+  const [tipoValor, setTipoValor] = useState('custom');
+  const [modoDespacho, setModoDespacho] = useState('texto');
+  const [gravacaoCorrida, setGravacaoCorrida] = useState(null);
   const [valorPersonalizado, setValorPersonalizado] = useState('');
   const [enviandoCorrida, setEnviandoCorrida] = useState(false);
 
@@ -535,8 +541,9 @@ export default function Monitoramento() {
     setNomePassageiro('');
     setEndBusca('');
     setEndDestino('');
-    setTipoValor('7');
+    setTipoValor('custom');
     setValorPersonalizado('');
+    setGravacaoCorrida(null);
   };
 
   const despacharCorrida = async (evento) => {
@@ -557,6 +564,12 @@ export default function Monitoramento() {
       return;
     }
 
+    const porAudio = modoDespacho === 'audio';
+    if (porAudio && !gravacaoCorrida) {
+      aviso('Grave o áudio com o endereço antes de despachar.');
+      return;
+    }
+
     const token = localStorage.getItem('tokenAgencia');
     if (!token) {
       navegar('/login');
@@ -566,13 +579,20 @@ export default function Monitoramento() {
     setEnviandoCorrida(true);
 
     try {
+      // Na corrida por áudio o endereço vai na gravação; telefone e endereços não são pedidos.
+      const audio = porAudio ? await enviarAudio(gravacaoCorrida, motoristaSelecionado.id) : null;
       const resposta = await fetch(`${API_BASE}/api/Corrida/nova`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({
+        body: JSON.stringify(porAudio ? {
+          audioId: audio.id,
+          nomePassageiro: nomePassageiro.trim() || null,
+          valorDaCorrida: valorCorrida,
+          motoristaExclusivoId: Number(motoristaSelecionado.id)
+        } : {
           telefonePassageiro: telPassageiro,
           nomePassageiro,
           enderecoBusca: endBusca,
@@ -605,7 +625,7 @@ export default function Monitoramento() {
       buscarMotoristas(false);
     } catch (erro) {
       console.error('Erro ao despachar corrida pelo monitoramento:', erro);
-      mostrarErro('Erro de conexao ao despachar a corrida.');
+      mostrarErro(erro?.message && porAudio ? erro.message : 'Erro de conexao ao despachar a corrida.');
     } finally {
       setEnviandoCorrida(false);
     }
@@ -720,6 +740,9 @@ export default function Monitoramento() {
                         {motoristaSelecionado.corridaAtivaBusca || 'Busca nao informada'}
                         <br />
                         {motoristaSelecionado.corridaAtivaDestino || 'Destino nao informado'}
+                        {motoristaSelecionado.corridaAtivaAudioId && (
+                          <AudioPlayer key={motoristaSelecionado.corridaAtivaAudioId} audioId={motoristaSelecionado.corridaAtivaAudioId} className="monitoramento-audio-corrida" />
+                        )}
                       </dd>
                     </div>
                   )}
@@ -728,47 +751,81 @@ export default function Monitoramento() {
                 <form className="monitoramento-form" onSubmit={despacharCorrida}>
                   <h4>Despachar para este motoboy</h4>
 
-                  <div className="monitoramento-input-duplo">
-                    <input
-                      type="tel"
-                      inputMode="numeric"
-                      autoComplete="tel"
-                      placeholder="Telefone"
-                      value={telPassageiro}
-                      onChange={(e) => setTelPassageiro(e.target.value)}
-                      required
-                      disabled={!podeDespachar || enviandoCorrida}
-                    />
-
-                    <input
-                      type="text"
-                      placeholder="Passageiro"
-                      value={nomePassageiro}
-                      onChange={(e) => setNomePassageiro(e.target.value)}
-                      required
-                      disabled={!podeDespachar || enviandoCorrida}
-                    />
+                  <div className="monitoramento-modos" role="tablist" aria-label="Como enviar a corrida">
+                    <button type="button" role="tab" aria-selected={modoDespacho === 'texto'} className={modoDespacho === 'texto' ? 'ativo' : ''} onClick={() => setModoDespacho('texto')} disabled={enviandoCorrida}>
+                      Digitar endereço
+                    </button>
+                    <button type="button" role="tab" aria-selected={modoDespacho === 'audio'} className={modoDespacho === 'audio' ? 'ativo' : ''} onClick={() => setModoDespacho('audio')} disabled={enviandoCorrida}>
+                      🎤 Áudio
+                    </button>
                   </div>
 
-                  <input
-                    type="text"
-                    placeholder="Endereco de busca"
-                    value={endBusca}
-                    onChange={(e) => setEndBusca(e.target.value)}
-                    required
-                    disabled={!podeDespachar || enviandoCorrida}
-                  />
+                  {modoDespacho === 'audio' ? (
+                    <>
+                      <GravadorAudio gravacao={gravacaoCorrida} onGravacao={setGravacaoCorrida} desabilitado={!podeDespachar || enviandoCorrida} />
+                      <input
+                        type="text"
+                        placeholder="Passageiro (opcional)"
+                        value={nomePassageiro}
+                        onChange={(e) => setNomePassageiro(e.target.value)}
+                        disabled={!podeDespachar || enviandoCorrida}
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <div className="monitoramento-input-duplo">
+                        <input
+                          type="tel"
+                          inputMode="numeric"
+                          autoComplete="tel"
+                          placeholder="Telefone"
+                          value={telPassageiro}
+                          onChange={(e) => setTelPassageiro(e.target.value)}
+                          required
+                          disabled={!podeDespachar || enviandoCorrida}
+                        />
 
-                  <input
-                    type="text"
-                    placeholder="Destino"
-                    value={endDestino}
-                    onChange={(e) => setEndDestino(e.target.value)}
-                    required
-                    disabled={!podeDespachar || enviandoCorrida}
-                  />
+                        <input
+                          type="text"
+                          placeholder="Passageiro"
+                          value={nomePassageiro}
+                          onChange={(e) => setNomePassageiro(e.target.value)}
+                          required
+                          disabled={!podeDespachar || enviandoCorrida}
+                        />
+                      </div>
+
+                      <input
+                        type="text"
+                        placeholder="Endereco de busca"
+                        value={endBusca}
+                        onChange={(e) => setEndBusca(e.target.value)}
+                        required
+                        disabled={!podeDespachar || enviandoCorrida}
+                      />
+
+                      <input
+                        type="text"
+                        placeholder="Destino"
+                        value={endDestino}
+                        onChange={(e) => setEndDestino(e.target.value)}
+                        required
+                        disabled={!podeDespachar || enviandoCorrida}
+                      />
+                    </>
+                  )}
 
                   <div className="monitoramento-valores">
+                    <label>
+                      <input
+                        type="radio"
+                        value="custom"
+                        checked={tipoValor === 'custom'}
+                        onChange={() => setTipoValor('custom')}
+                        disabled={!podeDespachar || enviandoCorrida}
+                      />
+                      Outro
+                    </label>
                     <label>
                       <input
                         type="radio"
@@ -791,16 +848,6 @@ export default function Monitoramento() {
                       R$ 12,00
                     </label>
 
-                    <label>
-                      <input
-                        type="radio"
-                        value="custom"
-                        checked={tipoValor === 'custom'}
-                        onChange={() => setTipoValor('custom')}
-                        disabled={!podeDespachar || enviandoCorrida}
-                      />
-                      Outro
-                    </label>
                   </div>
 
                   {tipoValor === 'custom' && (
@@ -817,7 +864,7 @@ export default function Monitoramento() {
                   )}
 
                   <button type="submit" className="monitoramento-botao-despachar" disabled={!podeDespachar || enviandoCorrida}>
-                    {enviandoCorrida ? 'Despachando...' : `Despachar R$ ${formatarValor(valorCorrida)}`}
+                    {enviandoCorrida ? 'Despachando...' : `${modoDespacho === 'audio' ? 'Despachar áudio' : 'Despachar'} R$ ${formatarValor(valorCorrida)}`}
                   </button>
 
                   {!podeDespachar && (

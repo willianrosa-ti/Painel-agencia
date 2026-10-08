@@ -2,18 +2,44 @@
 // O servidor guarda cada mensagem só até a entrega e a leitura.
 const BANCO = 'millin-chat';
 const TABELA = 'conversas';
+const TABELA_AUDIOS = 'audios';
 export const LIMITE_MENSAGENS_LOCAIS = 500;
 
 let conexao = null;
 function abrir() {
   if (!globalThis.indexedDB) return Promise.resolve(null);
   conexao ??= new Promise(resolve => {
-    const pedido = indexedDB.open(BANCO, 1);
-    pedido.onupgradeneeded = () => pedido.result.createObjectStore(TABELA);
+    const pedido = indexedDB.open(BANCO, 2);
+    pedido.onupgradeneeded = () => {
+      const db = pedido.result;
+      if (!db.objectStoreNames.contains(TABELA)) db.createObjectStore(TABELA);
+      if (!db.objectStoreNames.contains(TABELA_AUDIOS)) db.createObjectStore(TABELA_AUDIOS);
+    };
     pedido.onsuccess = () => resolve(pedido.result);
     pedido.onerror = () => resolve(null);
   });
   return conexao;
+}
+
+// Áudios (de chat e de corrida) também ficam guardados neste aparelho.
+export async function lerAudioLocal(id) {
+  const db = await abrir();
+  if (!db) return null;
+  return new Promise(resolve => {
+    const pedido = db.transaction(TABELA_AUDIOS).objectStore(TABELA_AUDIOS).get(String(id));
+    pedido.onsuccess = () => resolve(pedido.result instanceof Blob ? pedido.result : null);
+    pedido.onerror = () => resolve(null);
+  });
+}
+
+export async function salvarAudioLocal(id, blob) {
+  const db = await abrir();
+  if (!db || !blob) return;
+  await new Promise(resolve => {
+    const transacao = db.transaction(TABELA_AUDIOS, 'readwrite');
+    transacao.objectStore(TABELA_AUDIOS).put(blob, String(id));
+    transacao.oncomplete = transacao.onerror = transacao.onabort = () => resolve();
+  });
 }
 
 const chave = (agenciaId, motoristaId) => `${agenciaId}:${motoristaId}`;
