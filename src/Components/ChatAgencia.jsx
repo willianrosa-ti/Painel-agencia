@@ -9,6 +9,8 @@ import { IconeLixeira, IconeMicrofone } from './Icones';
 import { useGravacao } from '../Services/useGravacao';
 import AudioPlayer from './AudioPlayer';
 import './ChatAgencia.css';
+import { useRadio } from '../Services/radioContext';
+import { RadioIcon } from './RadioProvider';
 
 const API = 'https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net';
 const hora = data => new Date(/Z|[+-]\d\d:\d\d$/.test(data) ? data : `${data}Z`).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -20,6 +22,7 @@ async function api(caminho, init = {}) {
 }
 
 export default function ChatAgencia() {
+  const { chamar } = useRadio();
   const location = useLocation();
   const ativo = Boolean(localStorage.getItem('tokenAgencia')) && !/^\/(login|admin)/.test(location.pathname);
   const [aberto, setAberto] = useState(false);
@@ -241,7 +244,7 @@ export default function ChatAgencia() {
       <div className="chat-agencia-body">
         <aside className="chat-agencia-contacts"><input aria-label="Buscar motorista" placeholder="Buscar motorista…" value={busca} onChange={e => setBusca(e.target.value)} /><div className="chat-contact-list">{conversas.filter(c => c.nome.toLowerCase().includes(busca.toLowerCase())).map(c => <button key={c.motoristaId} className={selecionado === c.motoristaId ? 'selected' : ''} onClick={() => selecionar(c.motoristaId)}><span className="chat-contact-avatar">{c.nome.slice(0, 1)}</span><span><strong>{c.nome}</strong><small>{textoSemIcone(c.ultimaMensagem || previas[c.motoristaId]) || 'Iniciar conversa'}</small></span>{c.naoLidas > 0 && <b>{c.naoLidas}</b>}</button>)}</div></aside>
         <div className="chat-agencia-conversation">{motorista ? <>
-          <div className="chat-person-header"><button className="chat-back" onClick={() => { selecionadoRef.current = null; conversaProntaRef.current = null; setSelecionado(null); }} aria-label="Voltar aos motoristas">←</button><strong>{motorista.nome}</strong><span>Motorista</span></div>
+          <div className="chat-person-header"><button className="chat-back" onClick={() => { selecionadoRef.current = null; conversaProntaRef.current = null; setSelecionado(null); }} aria-label="Voltar aos motoristas">←</button><strong>{motorista.nome}</strong><button className="radio-beep" title="Bipar para chamar no rádio" onClick={() => chamar('Motorista', selecionado)}><RadioIcon />Bipar</button></div>
           <div className="chat-agencia-history" ref={historicoRef} aria-live="polite" onScroll={e => { const el = e.currentTarget; acompanharRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 100; }}>
             {anteriores && <button className="chat-older" disabled={carregando} onClick={() => { alturaAnteriorRef.current = historicoRef.current?.scrollHeight ?? null; acompanharRef.current = false; setCarregando(true); carregarMensagens(selecionado, mensagens[0]?.id); }}>Carregar anteriores</button>}
             {!mensagens.length && <p className="chat-empty">{carregando ? 'Carregando…' : 'Este é o início da conversa. Envie uma mensagem.'}</p>}

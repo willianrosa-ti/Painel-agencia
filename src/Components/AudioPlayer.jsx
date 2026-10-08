@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import { observarMicrofone, radioOcupado } from '../Services/audioFocus';
 import { obterAudio } from '../Services/audio';
 import { IconeMicrofone } from './Icones';
 import './Audio.css';
@@ -7,6 +8,8 @@ import './Audio.css';
 export default function AudioPlayer({ audioId, blob, className = '' }) {
   const [url, setUrl] = useState(null);
   const [erro, setErro] = useState('');
+  const player = useRef(null);
+  useEffect(() => observarMicrofone(tipo => { if (tipo === 'radio') player.current?.pause(); }), []);
 
   useEffect(() => {
     let ativo = true;
@@ -27,5 +30,5 @@ export default function AudioPlayer({ audioId, blob, className = '' }) {
 
   if (erro) return <span className={`audio-aviso ${className}`}><IconeMicrofone tamanho={15} /> {erro}</span>;
   if (!url) return <span className={`audio-aviso ${className}`}><IconeMicrofone tamanho={15} /> Carregando áudio…</span>;
-  return <audio className={`audio-player ${className}`} controls preload="metadata" src={url} />;
+  return <audio ref={player} onPlay={() => { if (radioOcupado()) player.current?.pause(); }} className={`audio-player ${className}`} controls preload="metadata" src={url} />;
 }

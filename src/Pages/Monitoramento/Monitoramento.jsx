@@ -11,6 +11,8 @@ import GravadorAudio from '../../Components/GravadorAudio';
 import { IconeMicrofone } from '../../Components/Icones';
 import { enviarAudio } from '../../Services/audio';
 import './Monitoramento.css';
+import { useRadio } from '../../Services/radioContext';
+import { RadioIcon } from '../../Components/RadioProvider';
 
 const API_BASE = 'https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net';
 const CENTRO_PADRAO = [-22.9782, -49.8718];
@@ -181,6 +183,7 @@ function formatarValor(valor) {
 }
 
 export default function Monitoramento() {
+  const { chamar: chamarRadio } = useRadio();
   const navegar = useNavigate();
   const { sucesso, erro: mostrarErro, aviso } = useFeedback();
 
@@ -715,6 +718,7 @@ export default function Monitoramento() {
                       {STATUS_LABEL[statusSelecionado] || 'Sem sinal'}
                     </span>
                     <h3>{motoristaSelecionado.nome}</h3>
+                    <button className="radio-beep monitor-radio" disabled={!['livre', 'em_corrida'].includes(statusSelecionado)} onClick={() => chamarRadio('Motorista', motoristaSelecionado.id)}><RadioIcon />Conectar rádio</button>
                   </div>
                 </div>
 

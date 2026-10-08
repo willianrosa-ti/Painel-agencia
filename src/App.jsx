@@ -1,4 +1,5 @@
 import ChatAgencia from './Components/ChatAgencia';
+import RadioProvider from './Components/RadioProvider';
 import { BrowserRouter, HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './Pages/Login/Login';
 import Painel from './Pages/Painel/Painel'; 
@@ -18,6 +19,7 @@ export default function App() {
       <NativeAppSetup />
       <AppUpdateNotice />
       <Router>
+        <RadioProvider>
         <Routes>
           {/* Rota padrão: se entrar vazio, joga pro login */}
           <Route path="/" element={<Navigate to="/login" replace />} />
@@ -43,6 +45,7 @@ export default function App() {
           
         </Routes>
       <ChatAgencia />
+        </RadioProvider>
       </Router>
     </FeedbackProvider>
   );

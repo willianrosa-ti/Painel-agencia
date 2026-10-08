@@ -1,4 +1,5 @@
 import { lerAudioLocal, salvarAudioLocal } from './chatLocal.js';
+import { reservarMicrofone } from './audioFocus.js';
 
 const API_BASE = 'https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net';
 export const DURACAO_MAXIMA_MS = 120_000;
@@ -21,6 +22,13 @@ export function gravacaoSuportada() {
 }
 
 export async function iniciarGravacao() {
+  const liberar = reservarMicrofone('gravacao');
+  try {
+    const gravador = await gravarLivre();
+    return { inicio: gravador.inicio, parar: async () => { try { return await gravador.parar(); } finally { liberar(); } }, cancelar: () => { try { gravador.cancelar(); } finally { liberar(); } } };
+  } catch (e) { liberar(); throw e; }
+}
+async function gravarLivre() {
   if (!gravacaoSuportada()) throw new Error('Este aparelho não permite gravar áudio.');
   let fluxo;
   try {
