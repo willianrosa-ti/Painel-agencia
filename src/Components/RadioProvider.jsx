@@ -9,12 +9,14 @@ import './Radio.css';
 
 const API = 'https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net';
 const vazio = { chamada: null, eu: null, conectado: false, preparando: false, erro: '' };
+// Duração do PRI RADIO: o microfone só abre depois do bipe, como num rádio comunicador.
+const DURACAO_BIPE_MS = 650;
 export default function RadioProvider({ children }) {
   const location = useLocation();
   const token = localStorage.getItem('tokenAgencia');
   const ativo = !!token && !/^\/(login|admin)/.test(location.pathname);
   const [estado, setEstado] = useState(vazio);
-  const client = useRef(null), beep = useRef(null), botao = useRef(null);
+  const client = useRef(null), beep = useRef(null), bipeRadio = useRef(null), botao = useRef(null);
   useEffect(() => {
     if (!ativo) return;
     const hub = new signalR.HubConnectionBuilder().withUrl(`${API}/hub-radio`, { accessTokenFactory: () => localStorage.getItem('tokenAgencia') || '' }).withAutomaticReconnect().build();
@@ -23,18 +25,26 @@ export default function RadioProvider({ children }) {
         const r = await fetch(`${API}/api/Radio/config?voz=${voz}`, { headers: { Authorization: `Bearer ${localStorage.getItem('tokenAgencia')}` } });
         if (!r.ok) throw new Error('Sessão indisponível. Entre novamente.'); return r.json();
       },
+      // Rádio não tem "atender": com o painel visível, a conexão é feita na hora.
+      autoAtender: () => !document.hidden,
+      bipe: () => {
+        bipeRadio.current ??= new Audio(`${import.meta.env.BASE_URL}sounds/pri-radio.mp3`);
+        bipeRadio.current.currentTime = 0; bipeRadio.current.play().catch(() => {});
+        return DURACAO_BIPE_MS;
+      },
       invite: chamada => {
         beep.current ??= new Audio(`${import.meta.env.BASE_URL}sounds/radio-bipe.wav`); beep.current.play().catch(() => {});
         if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
-          const n = new Notification(`Rádio · ${chamada.origem.nome}`, { body: 'Bipe! Abra o painel para atender.', tag: `radio-${chamada.id}` });
+          const n = new Notification(`Rádio · ${chamada.origem.nome}`, { body: 'Rádio chamando. Abra o painel para conectar.', tag: `radio-${chamada.id}` });
           n.onclick = () => { window.focus(); n.close(); };
         }
       },
     });
     client.current = c; c.start();
     const release = () => c.release();
-    window.addEventListener('blur', release); document.addEventListener('visibilitychange', release);
-    return () => { window.removeEventListener('blur', release); document.removeEventListener('visibilitychange', release); client.current = null; c.dispose(); setEstado(vazio); };
+    const visibilidade = () => { c.release(); if (!document.hidden) c.atenderPendente(); };
+    window.addEventListener('blur', release); document.addEventListener('visibilitychange', visibilidade);
+    return () => { window.removeEventListener('blur', release); document.removeEventListener('visibilitychange', visibilidade); client.current = null; c.dispose(); setEstado(vazio); };
   }, [ativo, token]);
   const call = estado.chamada, incoming = call?.status === 'Tocando' && call.destino.chave === estado.eu?.chave;
   const other = call?.origem.chave === estado.eu?.chave ? call?.destino : call?.origem;
@@ -49,17 +59,17 @@ export default function RadioProvider({ children }) {
         if (e.key === 'Tab') { const focus = [...e.currentTarget.querySelectorAll('button:not([disabled])')]; const next = e.shiftKey ? focus.at(-1) : focus[0]; if (document.activeElement === (e.shiftKey ? focus[0] : focus.at(-1))) { e.preventDefault(); next?.focus(); } }
       }}>
         <div className="radio-mark"><RadioIcon /></div><small>RÁDIO PRIVADO</small><h2 id="radio-titulo">{other?.nome || 'Rádio'}</h2>
-        {call && <p aria-live="polite">{call.status === 'Tocando' ? incoming ? 'Quer falar com você' : 'Bipando… aguardando resposta' : call.status === 'Ativa' ? falando ? 'Você está falando' : call.falante ? `${other?.nome} está falando` : 'Canal livre' : 'Conectando áudio…'}</p>}
+        {call && <p aria-live="polite">{call.status === 'Tocando' ? incoming ? 'Conectando o rádio…' : 'Chamando… conectando o rádio' : call.status === 'Ativa' ? falando ? 'Você está falando' : call.falante ? `${other?.nome} está falando` : 'Canal livre' : 'Conectando áudio…'}</p>}
         {estado.preparando && <p>Preparando microfone…</p>}
         {estado.erro && <p className="radio-error" role="alert">{estado.erro}</p>}
-        {incoming ? <button className="radio-accept" disabled={estado.preparando} onClick={() => client.current?.accept()}>Atender bipe</button> : call?.status === 'Ativa' && <>
+        {call?.status === 'Ativa' && <>
           <button className={`radio-talk ${falando ? 'speaking' : ''}`} aria-label="Segure para falar no rádio" onPointerDown={e => { if (e.button !== 0) return; e.currentTarget.setPointerCapture(e.pointerId); client.current?.press(); }}
             onPointerUp={() => client.current?.release()} onPointerCancel={() => client.current?.release()} onLostPointerCapture={() => client.current?.release()} onBlur={() => client.current?.release()}
             onKeyDown={e => { if ([' ', 'Enter'].includes(e.key)) { e.preventDefault(); if (!e.repeat) client.current?.press(); } }} onKeyUp={e => { if ([' ', 'Enter'].includes(e.key)) { e.preventDefault(); client.current?.release(); } }}>
             <RadioIcon />{falando ? 'Falando…' : 'Segure para falar'}
-          </button><span className="radio-help">Solte para ouvir · até 20 s por fala</span>
+          </button><span className="radio-help">Espere o bipe para falar · solte para ouvir · até 20 s por fala</span>
         </>}
-        <button ref={botao} className="radio-end" onClick={() => client.current?.end()}>{call ? incoming ? 'Recusar' : 'Encerrar rádio' : 'Fechar'}</button>
+        <button ref={botao} className="radio-end" onClick={() => client.current?.end()}>{call ? 'Encerrar rádio' : 'Fechar'}</button>
       </section>
     </div>, document.body)}
   </RadioContext.Provider>;
