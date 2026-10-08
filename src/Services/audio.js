@@ -6,6 +6,11 @@ export const DURACAO_MAXIMA_MS = 120_000;
 // MP4/AAC toca em qualquer aparelho (Android, iPhone, PC); WebM fica como alternativa.
 const FORMATOS = ['audio/mp4;codecs=mp4a.40.2', 'audio/mp4', 'audio/webm;codecs=opus', 'audio/webm'];
 
+// Textos antigos do servidor começavam com o emoji de microfone; o painel mostra o ícone desenhado no lugar.
+export function textoSemIcone(texto) {
+  return String(texto ?? '').replace(/^\u{1F3A4}\s*/u, '');
+}
+
 export function formatarDuracao(ms) {
   const total = Math.max(0, Math.round((ms || 0) / 1000));
   return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;

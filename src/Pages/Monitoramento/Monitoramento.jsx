@@ -8,6 +8,7 @@ import Navbar from '../../Components/Navbar';
 import { useFeedback } from '../../Components/Feedback/useFeedback';
 import AudioPlayer from '../../Components/AudioPlayer';
 import GravadorAudio from '../../Components/GravadorAudio';
+import { IconeMicrofone } from '../../Components/Icones';
 import { enviarAudio } from '../../Services/audio';
 import './Monitoramento.css';
 
@@ -737,11 +738,17 @@ export default function Monitoramento() {
                     <div>
                       <dt>Corrida atual</dt>
                       <dd>
-                        {motoristaSelecionado.corridaAtivaBusca || 'Busca nao informada'}
-                        <br />
-                        {motoristaSelecionado.corridaAtivaDestino || 'Destino nao informado'}
-                        {motoristaSelecionado.corridaAtivaAudioId && (
-                          <AudioPlayer key={motoristaSelecionado.corridaAtivaAudioId} audioId={motoristaSelecionado.corridaAtivaAudioId} className="monitoramento-audio-corrida" />
+                        {motoristaSelecionado.corridaAtivaAudioId ? (
+                          <>
+                            <span className="monitoramento-endereco-audio"><IconeMicrofone tamanho={15} /> Endereço no áudio</span>
+                            <AudioPlayer key={motoristaSelecionado.corridaAtivaAudioId} audioId={motoristaSelecionado.corridaAtivaAudioId} className="monitoramento-audio-corrida" />
+                          </>
+                        ) : (
+                          <>
+                            {motoristaSelecionado.corridaAtivaBusca || 'Busca nao informada'}
+                            <br />
+                            {motoristaSelecionado.corridaAtivaDestino || 'Destino nao informado'}
+                          </>
                         )}
                       </dd>
                     </div>
@@ -756,7 +763,7 @@ export default function Monitoramento() {
                       Digitar endereço
                     </button>
                     <button type="button" role="tab" aria-selected={modoDespacho === 'audio'} className={modoDespacho === 'audio' ? 'ativo' : ''} onClick={() => setModoDespacho('audio')} disabled={enviandoCorrida}>
-                      🎤 Áudio
+                      <IconeMicrofone tamanho={17} /> Áudio
                     </button>
                   </div>
 

@@ -21,3 +21,10 @@ test('duração do áudio aparece como minutos e segundos', async () => {
   assert.equal(formatarDuracao(125_000), '2:05');
   assert.equal(formatarDuracao(undefined), '0:00');
 });
+
+test('textos antigos com emoji de microfone aparecem sem o emoji', async () => {
+  const { textoSemIcone } = await import('../src/Services/audio.js');
+  assert.equal(textoSemIcone('\u{1F3A4} Mensagem de voz'), 'Mensagem de voz');
+  assert.equal(textoSemIcone('Olá'), 'Olá');
+  assert.equal(textoSemIcone(null), '');
+});

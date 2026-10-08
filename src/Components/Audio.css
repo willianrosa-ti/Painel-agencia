@@ -4,8 +4,15 @@
   height: 40px;
 }
 
+.icone {
+  flex: none;
+  vertical-align: middle;
+}
+
 .audio-aviso {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   color: #6b7280;
   font-size: 0.85rem;
 }
@@ -40,6 +47,10 @@
 }
 
 .gravador-audio__gravar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   width: 100%;
   border: 2px dashed #dc2626;
   background: #fef2f2;

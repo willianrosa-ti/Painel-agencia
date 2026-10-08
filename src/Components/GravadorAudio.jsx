@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { DURACAO_MAXIMA_MS, formatarDuracao } from '../Services/audio';
 import { useGravacao } from '../Services/useGravacao';
 import AudioPlayer from './AudioPlayer';
+import { IconeMicrofone } from './Icones';
 import './Audio.css';
 
 // Grava um áudio para enviar depois: gravar → parar → ouvir → regravar ou descartar.
@@ -45,7 +46,7 @@ export default function GravadorAudio({ gravacao, onGravacao, desabilitado = fal
         </div>
       ) : (
         <button type="button" className="gravador-audio__gravar" onClick={iniciar} disabled={desabilitado}>
-          🎤 Gravar áudio com o endereço
+          <IconeMicrofone tamanho={22} /> Gravar áudio com o endereço
         </button>
       )}
       {erro && <p className="gravador-audio__erro" role="alert">{erro}</p>}

@@ -4,7 +4,8 @@ import { useLocation } from 'react-router-dom';
 import * as signalR from '@microsoft/signalr';
 import { ativarPushAgencia } from '../Services/agenciaPushNotifications';
 import { acrescentarMensagem, juntarMensagens as juntar, lerConversa, salvarConversa, ultimasMensagens } from '../Services/chatLocal';
-import { DURACAO_MAXIMA_MS, enviarAudio, formatarDuracao, obterAudio } from '../Services/audio';
+import { DURACAO_MAXIMA_MS, enviarAudio, formatarDuracao, obterAudio, textoSemIcone } from '../Services/audio';
+import { IconeLixeira, IconeMicrofone } from './Icones';
 import { useGravacao } from '../Services/useGravacao';
 import AudioPlayer from './AudioPlayer';
 import './ChatAgencia.css';
@@ -141,7 +142,7 @@ export default function ChatAgencia() {
       if (recebidasRef.current.size > 500) recebidasRef.current.delete(recebidasRef.current.values().next().value);
       if (abertoRef.current && selecionadoRef.current === m.motoristaId && document.visibilityState === 'visible') return;
       if ('Notification' in window && Notification.permission === 'granted' && document.visibilityState === 'visible') {
-        const aviso = new Notification('Mensagem do motorista', { body: m.texto, tag: `chat-${m.id}` });
+        const aviso = new Notification('Mensagem do motorista', { body: textoSemIcone(m.texto), tag: `chat-${m.id}` });
         aviso.onclick = () => { window.focus(); abertoRef.current = true; setAberto(true); selecionar(m.motoristaId); aviso.close(); };
       } else if (audioRef.current?.state === 'running') {
         const ctx = audioRef.current, oscilador = ctx.createOscillator(), ganho = ctx.createGain();
@@ -238,7 +239,7 @@ export default function ChatAgencia() {
     {aberto && <section className={`chat-agencia-window ${selecionado ? 'chat-agencia-window--selected' : ''}`} role="dialog" aria-label="Mensagens com motoristas" onKeyDown={e => { if (e.key === 'Escape') alternar(); }}>
       <header className="chat-agencia-header"><div><strong>Conversas</strong><small><i className={conectado ? 'conectado' : ''} />{conectado ? 'Em tempo real' : 'Reconectando…'}</small></div><div className="chat-header-actions"><button title="Ativar notificações do dispositivo" aria-label="Ativar notificações" onClick={async () => { try { await ativarPushAgencia(localStorage.getItem('tokenAgencia')); setErro(''); } catch (e) { setErro(e.message); } }}><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M9 21h6" /></svg></button><button aria-label="Fechar conversas" onClick={alternar}>×</button></div></header>
       <div className="chat-agencia-body">
-        <aside className="chat-agencia-contacts"><input aria-label="Buscar motorista" placeholder="Buscar motorista…" value={busca} onChange={e => setBusca(e.target.value)} /><div className="chat-contact-list">{conversas.filter(c => c.nome.toLowerCase().includes(busca.toLowerCase())).map(c => <button key={c.motoristaId} className={selecionado === c.motoristaId ? 'selected' : ''} onClick={() => selecionar(c.motoristaId)}><span className="chat-contact-avatar">{c.nome.slice(0, 1)}</span><span><strong>{c.nome}</strong><small>{c.ultimaMensagem || previas[c.motoristaId] || 'Iniciar conversa'}</small></span>{c.naoLidas > 0 && <b>{c.naoLidas}</b>}</button>)}</div></aside>
+        <aside className="chat-agencia-contacts"><input aria-label="Buscar motorista" placeholder="Buscar motorista…" value={busca} onChange={e => setBusca(e.target.value)} /><div className="chat-contact-list">{conversas.filter(c => c.nome.toLowerCase().includes(busca.toLowerCase())).map(c => <button key={c.motoristaId} className={selecionado === c.motoristaId ? 'selected' : ''} onClick={() => selecionar(c.motoristaId)}><span className="chat-contact-avatar">{c.nome.slice(0, 1)}</span><span><strong>{c.nome}</strong><small>{textoSemIcone(c.ultimaMensagem || previas[c.motoristaId]) || 'Iniciar conversa'}</small></span>{c.naoLidas > 0 && <b>{c.naoLidas}</b>}</button>)}</div></aside>
         <div className="chat-agencia-conversation">{motorista ? <>
           <div className="chat-person-header"><button className="chat-back" onClick={() => { selecionadoRef.current = null; conversaProntaRef.current = null; setSelecionado(null); }} aria-label="Voltar aos motoristas">←</button><strong>{motorista.nome}</strong><span>Motorista</span></div>
           <div className="chat-agencia-history" ref={historicoRef} aria-live="polite" onScroll={e => { const el = e.currentTarget; acompanharRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 100; }}>
@@ -252,10 +253,10 @@ export default function ChatAgencia() {
               : audioPendente ? <div className="chat-gravacao"><AudioPlayer blob={audioPendente.blob} /></div>
               : <textarea ref={campoRef} aria-label={`Mensagem para ${motorista.nome}`} placeholder="Escreva uma mensagem…" value={texto} readOnly={enviando} maxLength={2000} rows={2} onChange={e => { setTexto(e.target.value); rascunhosRef.current.set(selecionado, e.target.value); }} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(e); } }} />}
             {gravacao.gravando || audioPendente ? <>
-              <button type="button" className="chat-descartar" onClick={descartarAudio} disabled={enviando} aria-label="Descartar áudio">🗑</button>
+              <button type="button" className="chat-descartar" onClick={descartarAudio} disabled={enviando} aria-label="Descartar áudio"><IconeLixeira tamanho={21} /></button>
               <button type="button" onClick={enviarAudioAtual} disabled={enviando} aria-label="Enviar áudio">{enviando ? '…' : '↑'}</button>
             </> : texto.trim() ? <button disabled={enviando} aria-label="Enviar mensagem">{enviando ? '…' : '↑'}</button>
-              : <button type="button" className="chat-microfone" onClick={gravarAudio} aria-label="Gravar áudio">🎤</button>}
+              : <button type="button" className="chat-microfone" onClick={gravarAudio} aria-label="Gravar áudio"><IconeMicrofone tamanho={23} /></button>}
           </form>
         </> : <div className="chat-empty"><span>↗</span><strong>Fale com sua frota</strong><p>Escolha um motorista para iniciar uma conversa.</p></div>}</div>
       </div>

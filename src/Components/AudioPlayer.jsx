@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { obterAudio } from '../Services/audio';
+import { IconeMicrofone } from './Icones';
 import './Audio.css';
 
 // Toca um áudio guardado neste aparelho (ou baixa do servidor e guarda na primeira vez).
@@ -24,7 +25,7 @@ export default function AudioPlayer({ audioId, blob, className = '' }) {
     };
   }, [audioId, blob]);
 
-  if (erro) return <span className={`audio-aviso ${className}`}>🎤 {erro}</span>;
-  if (!url) return <span className={`audio-aviso ${className}`}>🎤 Carregando áudio…</span>;
+  if (erro) return <span className={`audio-aviso ${className}`}><IconeMicrofone tamanho={15} /> {erro}</span>;
+  if (!url) return <span className={`audio-aviso ${className}`}><IconeMicrofone tamanho={15} /> Carregando áudio…</span>;
   return <audio className={`audio-player ${className}`} controls preload="metadata" src={url} />;
 }

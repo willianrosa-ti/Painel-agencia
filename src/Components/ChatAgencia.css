@@ -20,5 +20,5 @@
 @media(prefers-reduced-motion:reduce){.chat-agencia-window{animation:none}.chat-agencia-history{scroll-behavior:auto}}
 .chat-gravacao{flex:1;min-width:0;display:flex;align-items:center;gap:8px;color:#b91c1c;font-size:13px;font-weight:600}.chat-gravacao .audio-player{max-width:100%}
 .chat-gravacao-ponto{width:10px;height:10px;border-radius:50%;background:#dc2626;animation:chat-gravacao-pulso 1s ease-in-out infinite}@keyframes chat-gravacao-pulso{50%{opacity:.25}}
-.chat-agencia-compose button.chat-descartar{background:#fee2e2;color:#b91c1c;font-size:19px}.chat-agencia-compose button.chat-microfone{font-size:20px}
+.chat-agencia-compose button.chat-descartar,.chat-agencia-compose button.chat-microfone{display:inline-flex;align-items:center;justify-content:center}.chat-agencia-compose button.chat-descartar{background:#fee2e2;color:#b91c1c}
 .chat-bubble--audio{min-width:240px}.chat-bubble--audio .audio-player{display:block;width:100%}
