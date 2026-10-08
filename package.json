@@ -1,7 +1,7 @@
 {
   "name": "painel-agencia",
   "private": true,
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "Painel desktop para despacho de corridas da agencia MIL-LIN.",
   "author": "MIL-LIN",
   "type": "module",
