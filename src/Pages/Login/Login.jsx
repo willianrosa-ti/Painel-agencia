@@ -93,6 +93,8 @@ function salvarPerfilAgencia(dados) {
   localStorage.setItem('logoAgencia', logoUrl);
   localStorage.setItem('logoAgenciaUrl', logoUrl);
   localStorage.setItem('telefoneAgencia', telefoneWhatsApp);
+  // "Comunicacao": conta só com rádio, áudio e texto (sem corridas).
+  localStorage.setItem('agenciaComunicacao', String((pegarCampo(agencia, 'tipo', 'Tipo') || pegarCampo(dados, 'tipo', 'Tipo')) === 'Comunicacao'));
 
   aplicarTemaAgencia(corPrimaria, corSecundaria, corFonteCabecalho);
 

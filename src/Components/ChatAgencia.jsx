@@ -22,7 +22,8 @@ async function api(caminho, init = {}) {
 }
 
 export default function ChatAgencia() {
-  const { chamar } = useRadio();
+  const { chamar, alertar } = useRadio();
+  const [aviso, setAviso] = useState('');
   const location = useLocation();
   const ativo = Boolean(localStorage.getItem('tokenAgencia')) && !/^\/(login|admin)/.test(location.pathname);
   const [aberto, setAberto] = useState(false);
@@ -102,6 +103,15 @@ export default function ChatAgencia() {
     carregarMensagens(id);
     setTimeout(() => campoRef.current?.focus(), 0);
   }, [carregarMensagens, cancelarGravacao]);
+
+  useEffect(() => { if (!aviso) return; const t = setTimeout(() => setAviso(''), 2500); return () => clearTimeout(t); }, [aviso]);
+
+  // Alerta recebido → "Abrir conversa": abre o chat já na conversa do motorista.
+  useEffect(() => {
+    const abrir = e => { abertoRef.current = true; setAberto(true); carregarConversas(); atualizarPrevias(); selecionar(e.detail); };
+    window.addEventListener('abrirChatMotorista', abrir);
+    return () => window.removeEventListener('abrirChatMotorista', abrir);
+  }, [carregarConversas, atualizarPrevias, selecionar]);
 
   // Áudios recebidos também ficam guardados neste aparelho, mesmo antes de serem ouvidos.
   useEffect(() => {
@@ -238,13 +248,23 @@ export default function ChatAgencia() {
   }
   if (!ativo) return null;
   const motorista = conversas.find(c => c.motoristaId === selecionado);
+  // radio: "radio" (pode bipar), "alerta" (só alerta), "ocupado" ou "nenhum" (servidores antigos: sempre rádio).
+  const disponivel = motorista?.radio || 'radio';
+  const situacao = disponivel === 'ocupado' ? 'Ocupado · não recebe rádio nem alerta' : motorista?.online ? 'Online'
+    : disponivel === 'radio' ? 'Offline · recebe rádio' : disponivel === 'alerta' ? 'Offline · recebe só alerta' : 'Offline · pode deixar mensagem';
   return createPortal(<div className="chat-agencia-root">
     {aberto && <section className={`chat-agencia-window ${selecionado ? 'chat-agencia-window--selected' : ''}`} role="dialog" aria-label="Mensagens com motoristas" onKeyDown={e => { if (e.key === 'Escape') alternar(); }}>
       <header className="chat-agencia-header"><div><strong>Conversas</strong><small><i className={conectado ? 'conectado' : ''} />{conectado ? 'Em tempo real' : 'Reconectando…'}</small></div><div className="chat-header-actions"><button title="Ativar notificações do dispositivo" aria-label="Ativar notificações" onClick={async () => { try { await ativarPushAgencia(localStorage.getItem('tokenAgencia')); setErro(''); } catch (e) { setErro(e.message); } }}><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M9 21h6" /></svg></button><button aria-label="Fechar conversas" onClick={alternar}>×</button></div></header>
       <div className="chat-agencia-body">
         <aside className="chat-agencia-contacts"><input aria-label="Buscar motorista" placeholder="Buscar motorista…" value={busca} onChange={e => setBusca(e.target.value)} /><div className="chat-contact-list">{conversas.filter(c => c.nome.toLowerCase().includes(busca.toLowerCase())).map(c => <button key={c.motoristaId} className={selecionado === c.motoristaId ? 'selected' : ''} onClick={() => selecionar(c.motoristaId)}><span className="chat-contact-avatar">{c.nome.slice(0, 1)}</span><span><strong>{c.nome}</strong><small>{textoSemIcone(c.ultimaMensagem || previas[c.motoristaId]) || 'Iniciar conversa'}</small></span>{c.naoLidas > 0 && <b>{c.naoLidas}</b>}</button>)}</div></aside>
         <div className="chat-agencia-conversation">{motorista ? <>
-          <div className="chat-person-header"><button className="chat-back" onClick={() => { selecionadoRef.current = null; conversaProntaRef.current = null; setSelecionado(null); }} aria-label="Voltar aos motoristas">←</button><strong>{motorista.nome}</strong><button className="radio-beep" title="Bipar para chamar no rádio" onClick={() => chamar('Motorista', selecionado)}><RadioIcon />Bipar</button></div>
+          <div className="chat-person-header"><button className="chat-back" onClick={() => { selecionadoRef.current = null; conversaProntaRef.current = null; setSelecionado(null); }} aria-label="Voltar aos motoristas">←</button><strong>{motorista.nome}<span className="chat-person-status">{situacao}</span></strong>
+            <button className="chat-alert-btn" title="Enviar alerta (BIP BIP ALERTA)" aria-label="Enviar alerta" disabled={!['radio', 'alerta'].includes(disponivel)}
+              onClick={async () => { try { setAviso(await alertar('Motorista', selecionado) || 'Alerta enviado.'); setErro(''); } catch (e) { setErro(e.message); } }}>
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M9 21h6" /></svg>
+            </button>
+            <button className="radio-beep" title="Bipar para chamar no rádio" disabled={disponivel !== 'radio'} onClick={() => chamar('Motorista', selecionado)}><RadioIcon />Bipar</button></div>
+          {aviso && <p className="chat-agencia-aviso" aria-live="polite">{aviso}</p>}
           <div className="chat-agencia-history" ref={historicoRef} aria-live="polite" onScroll={e => { const el = e.currentTarget; acompanharRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 100; }}>
             {anteriores && <button className="chat-older" disabled={carregando} onClick={() => { alturaAnteriorRef.current = historicoRef.current?.scrollHeight ?? null; acompanharRef.current = false; setCarregando(true); carregarMensagens(selecionado, mensagens[0]?.id); }}>Carregar anteriores</button>}
             {!mensagens.length && <p className="chat-empty">{carregando ? 'Carregando…' : 'Este é o início da conversa. Envie uma mensagem.'}</p>}

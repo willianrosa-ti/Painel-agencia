@@ -81,6 +81,7 @@ function montarPayloadAgencia(formulario) {
     estadoBase: formulario.estadoBase.trim().toUpperCase(),
     planoAssinatura: formulario.planoAssinatura.trim() || 'Profissional',
     assinaturaAtiva: Boolean(formulario.assinaturaAtiva),
+    tipoAgencia: formulario.tipoAgencia === 'Comunicacao' ? 'Comunicacao' : 'MotoTaxi',
     assinaturaVenceEm: formulario.assinaturaVenceEm
       ? `${formulario.assinaturaVenceEm}T23:59:59`
       : null
@@ -444,7 +445,7 @@ function AgenciasPage({ agencias, carregando, salvando, onAtualizar, onSalvar, o
                       <td data-label="ID">#{agencia.id}</td>
                       <td data-label="Agencia">
                         <strong>{agencia.nome}</strong>
-                        <small>{agencia.planoAssinatura || 'Profissional'}</small>
+                        <small>{agencia.tipo === 'Comunicacao' ? 'Somente comunicação · ' : ''}{agencia.planoAssinatura || 'Profissional'}</small>
                       </td>
                       <td data-label="Telefone">{agencia.telefoneWhatsApp}</td>
                       <td data-label="Cidade">{agencia.cidadeBase}/{agencia.estadoBase}</td>
@@ -532,7 +533,8 @@ function AgenciaModal({ agencia, salvando, onFechar, onSalvar }) {
     estadoBase: agencia?.estadoBase || 'SP',
     planoAssinatura: agencia?.planoAssinatura || 'Profissional',
     assinaturaAtiva: agencia ? agencia.assinaturaAtiva !== false : true,
-    assinaturaVenceEm: dataParaInput(agencia?.assinaturaVenceEm)
+    assinaturaVenceEm: dataParaInput(agencia?.assinaturaVenceEm),
+    tipoAgencia: agencia?.tipo === 'Comunicacao' ? 'Comunicacao' : 'MotoTaxi'
   }));
 
   function atualizar(campo, valor) {
@@ -553,6 +555,13 @@ function AgenciaModal({ agencia, salvando, onFechar, onSalvar }) {
           onSalvar(formulario);
         }}
       >
+        <label>
+          Tipo de conta
+          <select value={formulario.tipoAgencia} onChange={(evento) => atualizar('tipoAgencia', evento.target.value)}>
+            <option value="MotoTaxi">Moto-táxi (corridas, rádio e chat)</option>
+            <option value="Comunicacao">Somente comunicação (rádio, áudio e texto)</option>
+          </select>
+        </label>
         <label>
           Nome
           <input value={formulario.nomeAgencia} onChange={(evento) => atualizar('nomeAgencia', evento.target.value)} required />

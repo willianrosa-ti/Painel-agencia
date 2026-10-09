@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useAgenciaComunicacao } from '../../Services/tipoAgencia';
 import Navbar from '../../Components/Navbar';
 import { useFeedback } from '../../Components/Feedback/useFeedback';
 import './Motoristas.css';
@@ -38,6 +39,8 @@ function converterValorDiaria(valor) {
 export default function Motoristas() {
   const { sucesso, erro: mostrarErro, aviso, confirmar } = useFeedback();
   const [frota, setFrota] = useState([]);
+  // Conta só de comunicação: os "motoristas" são membros (sem diária nem horário de corridas).
+  const comunicacao = useAgenciaComunicacao();
   const [nome, setNome] = useState('');
   const [telefone, setTelefone] = useState('');
   const [placa, setPlaca] = useState('');
@@ -235,11 +238,11 @@ export default function Motoristas() {
     <div>
       <Navbar nomeAgencia={nomeAgencia} />
       <div className="motoristas-container">
-        <h2 className="motoristas-titulo">📋 Gestão da Frota ({frota.length} motoristas)</h2>
+        <h2 className="motoristas-titulo">{comunicacao ? `📋 Membros (${frota.length})` : `📋 Gestão da Frota (${frota.length} motoristas)`}</h2>
 
         <div className="cartao-adicionar-motorista">
           <div className="cabecalho-form-motorista">
-            <h3>{motoristaEditando ? `✏️ Editando: ${motoristaEditando.nome}` : '➕ Adicionar Novo Motorista'}</h3>
+            <h3>{motoristaEditando ? `✏️ Editando: ${motoristaEditando.nome}` : comunicacao ? '➕ Adicionar membro' : '➕ Adicionar Novo Motorista'}</h3>
             {motoristaEditando && (
               <button type="button" className="botao-cancelar-edicao" onClick={limparFormulario}>Cancelar edição</button>
             )}
@@ -248,8 +251,8 @@ export default function Motoristas() {
           <form onSubmit={handleCadastrarOuEditar} className="formulario-motorista">
             <input type="text" placeholder="Nome" value={nome} onChange={(e) => setNome(e.target.value)} required className="input-motorista" />
             <input type="tel" inputMode="numeric" autoComplete="tel" placeholder="Telefone" value={telefone} onChange={(e) => setTelefone(e.target.value)} required className="input-motorista" />
-            <input type="text" placeholder="Placa da Moto" value={placa} onChange={(e) => setPlaca(e.target.value.toUpperCase())} required className="input-motorista" />
-            <input type="text" inputMode="decimal" placeholder="Diária (R$)" value={valorDiaria} onChange={(e) => setValorDiaria(sanitizarValorDiaria(e.target.value))} required className="input-motorista input-motorista-valor" />
+            <input type="text" placeholder={comunicacao ? 'Apelido ou placa (usado no login do app)' : 'Placa da Moto'} value={placa} onChange={(e) => setPlaca(e.target.value.toUpperCase())} required className="input-motorista" />
+            {!comunicacao && <input type="text" inputMode="decimal" placeholder="Diária (R$)" value={valorDiaria} onChange={(e) => setValorDiaria(sanitizarValorDiaria(e.target.value))} required className="input-motorista input-motorista-valor" />}
             <input
               type="password"
               placeholder={motoristaEditando ? 'Nova senha (opcional)' : 'Senha para o App'}
@@ -259,12 +262,12 @@ export default function Motoristas() {
               className="input-motorista"
             />
 
-            <fieldset className="horario-motorista"><legend>Horário de atuação · Brasília</legend>
+            {!comunicacao && <fieldset className="horario-motorista"><legend>Horário de atuação · Brasília</legend>
               <label>Das<input type="time" value={horarioInicio} onChange={e => setHorarioInicio(e.target.value)} aria-label="Início do horário" /></label>
               <label>Às<input type="time" value={horarioFim} onChange={e => setHorarioFim(e.target.value)} aria-label="Fim do horário" /></label>
               <button type="button" onClick={() => { setHorarioInicio(''); setHorarioFim(''); }}>Horário livre</button>
               <small>Fora do horário, conclui a corrida atual e não recebe novas. Aceita turnos que passam da meia-noite.</small>
-            </fieldset>
+            </fieldset>}
             <button type="submit" className="botao-cadastrar-motorista" disabled={salvando}>
               {salvando ? 'Salvando...' : motoristaEditando ? 'Salvar alterações' : 'Cadastrar'}
             </button>

@@ -327,6 +327,14 @@ export default function Monitoramento() {
       setAtualizadoEm(new Date().toISOString());
     });
 
+    // Posição em tempo real (o servidor só grava no banco de 30 em 30 s).
+    conexao.on('MotoristaPosicao', (p) => {
+      setMotoristas((lista) => lista.map((m) => String(m.id) === String(p.motoristaId)
+        ? { ...m, latitude: p.latitude, longitude: p.longitude, ultimaAtividade: p.ultimaAtividade, temLocalizacao: true }
+        : m));
+      setAtualizadoEm(new Date().toISOString());
+    });
+
     conexao.on('AtualizarMonitoramento', () => buscarMotoristas(false));
     conexao.on('AtualizarCorridas', () => buscarMotoristas(false));
     conexao.on('StatusMotoristaAtualizado', () => buscarMotoristas(false));

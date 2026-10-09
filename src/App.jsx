@@ -10,6 +10,12 @@ import Admin from './Pages/Admin/Admin';
 import FeedbackProvider from './Components/Feedback/FeedbackProvider';
 import NativeAppSetup from './Components/NativeAppSetup';
 import AppUpdateNotice from './Components/AppUpdateNotice';
+import { useAgenciaComunicacao } from './Services/tipoAgencia';
+
+// Conta só de comunicação não tem corridas, monitoramento nem financeiro: vai direto para os membros.
+function SomenteMotoTaxi({ children }) {
+  return useAgenciaComunicacao() ? <Navigate to="/motoristas" replace /> : children;
+}
 
 export default function App() {
   const Router = window.location.protocol === 'file:' ? HashRouter : BrowserRouter;
@@ -33,15 +39,15 @@ export default function App() {
           <Route path="/configuracoes" element={<Navigate to="/admin/configuracoes" replace />} />
           
           {/* Rota do Painel da agência */}
-          <Route path="/painel" element={<Painel />} />
-          <Route path="/monitoramento" element={<Monitoramento />} />
+          <Route path="/painel" element={<SomenteMotoTaxi><Painel /></SomenteMotoTaxi>} />
+          <Route path="/monitoramento" element={<SomenteMotoTaxi><Monitoramento /></SomenteMotoTaxi>} />
 
           {/* --- O QUE FOI ADICIONADO AQUI --- */}
           {/* Rota dos Motoristas: Criamos o caminho "/motoristas". 
               Assim, quando o link no Navbar for clicado, o React sabe 
               que precisa renderizar a tela de Gestão da Frota. */}
           <Route path="/motoristas" element={<Motoristas />} />
-          <Route path="/financeiro" element={<Financeiro />} />
+          <Route path="/financeiro" element={<SomenteMotoTaxi><Financeiro /></SomenteMotoTaxi>} />
           
         </Routes>
       <ChatAgencia />

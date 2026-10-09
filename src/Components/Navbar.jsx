@@ -7,6 +7,7 @@ import {
   obterStatusPushAgencia
 } from '../Services/agenciaPushNotifications';
 import './Navbar.css';
+import { useAgenciaComunicacao } from '../Services/tipoAgencia';
 
 const API_BASE = 'https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net';
 
@@ -61,6 +62,7 @@ function aplicarTemaAgencia() {
 }
 
 export default function Navbar({ nomeAgencia }) {
+  const comunicacao = useAgenciaComunicacao();
   const navegar = useNavigate();
   const { erro: mostrarErro, sucesso: mostrarSucesso, aviso } = useFeedback();
 
@@ -257,12 +259,17 @@ export default function Navbar({ nomeAgencia }) {
   return (
     <nav className="navbar-container">
       <div className="navbar-logo">
-        <Link to="/monitoramento" className="navbar-link-logo">
+        <Link to={comunicacao ? '/motoristas' : '/monitoramento'} className="navbar-link-logo">
           <h1>{nomeExibido}</h1>
         </Link>
       </div>
 
       <div className="navbar-menu">
+        {comunicacao ? (
+          <Link to="/motoristas" className="navbar-link">
+            Membros
+          </Link>
+        ) : <>
         <Link to="/painel" className="navbar-link">
           Operar
         </Link>
@@ -278,6 +285,7 @@ export default function Navbar({ nomeAgencia }) {
         <Link to="/financeiro" className="navbar-link">
           Financeiro
         </Link>
+        </>}
       </div>
 
       <div className="navbar-direita">

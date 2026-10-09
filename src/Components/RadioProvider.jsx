@@ -16,14 +16,30 @@ export default function RadioProvider({ children }) {
   const token = localStorage.getItem('tokenAgencia');
   const ativo = !!token && !/^\/(login|admin)/.test(location.pathname);
   const [estado, setEstado] = useState(vazio);
-  const client = useRef(null), beep = useRef(null), bipeRadio = useRef(null), botao = useRef(null);
+  const client = useRef(null), beep = useRef(null), bipeRadio = useRef(null), botao = useRef(null), somAlerta = useRef(null);
+  // Alertas recebidos pelo chat (motoristas): ficam na tela até a agência abrir, chamar ou fechar.
+  const [alertas, setAlertas] = useState([]);
   useEffect(() => {
     if (!ativo) return;
     const hub = new signalR.HubConnectionBuilder().withUrl(`${API}/hub-radio`, { accessTokenFactory: () => localStorage.getItem('tokenAgencia') || '' }).withAutomaticReconnect().build();
     const c = new RadioClient({ hub, media: radioMedia, update: setEstado,
       config: async () => {
         const r = await fetch(`${API}/api/Radio/config`, { headers: { Authorization: `Bearer ${localStorage.getItem('tokenAgencia')}` } });
-        if (!r.ok) throw new Error('Sessão indisponível. Entre novamente.'); return r.json();
+        if (!r.ok) throw new Error('Sessão indisponível. Entre novamente.');
+        const dados = await r.json();
+        // Conta só de comunicação (rádio, áudio e texto): o menu esconde corridas e financeiro.
+        const comunicacao = String(!!dados.comunicacao);
+        if (localStorage.getItem('agenciaComunicacao') !== comunicacao) { localStorage.setItem('agenciaComunicacao', comunicacao); window.dispatchEvent(new Event('agenciaComunicacao')); }
+        return dados;
+      },
+      aoAlertaAvulso: alerta => {
+        somAlerta.current ??= new Audio(`${import.meta.env.BASE_URL}sounds/bip-alerta.mp3`);
+        somAlerta.current.currentTime = 0; somAlerta.current.play().catch(() => {});
+        setAlertas(lista => [alerta, ...lista.filter(a => a.de.chave !== alerta.de.chave)].slice(0, 5));
+        if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
+          const n = new Notification(`Alerta · ${alerta.de.nome}`, { body: 'O motorista está chamando a agência.', tag: `radio-avulso-${alerta.id}` });
+          n.onclick = () => { window.focus(); n.close(); };
+        }
       },
       // Rádio pelo servidor, sem "atender": com o painel visível, a conexão é feita na hora.
       autoAtender: () => !document.hidden,
@@ -51,8 +67,21 @@ export default function RadioProvider({ children }) {
   const falando = !!call?.falante && call.falante === estado.eu?.chave;
   const aberto = ativo && (!!call || !!estado.erro || estado.preparando);
   useEffect(() => { if (aberto) botao.current?.focus(); }, [aberto]);
-  return <RadioContext.Provider value={{ chamar: (perfil, id) => client.current?.call(perfil, id), estado }}>
+  const fecharAlerta = id => setAlertas(lista => lista.filter(a => a.id !== id));
+  return <RadioContext.Provider value={{ chamar: (perfil, id) => client.current?.call(perfil, id), estado,
+    alertar: async (perfil, id) => { if (!client.current) throw new Error('Rádio indisponível.'); return client.current.alertarAvulso(perfil, id); } }}>
     {children}
+    {ativo && alertas.length > 0 && createPortal(<div className="radio-alertas" role="region" aria-label="Alertas recebidos">
+      {alertas.map(a => <div key={a.id} className="radio-alerta" role="alert">
+        <span className="radio-alerta-icone" aria-hidden="true">🔔</span>
+        <div><strong>{a.de.nome}</strong><small>enviou um alerta · {new Date(a.em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</small></div>
+        <div className="radio-alerta-acoes">
+          <button onClick={() => { fecharAlerta(a.id); window.dispatchEvent(new CustomEvent('abrirChatMotorista', { detail: a.de.id })); }}>Abrir conversa</button>
+          <button className="radio-alerta-radio" onClick={() => { fecharAlerta(a.id); client.current?.call('Motorista', a.de.id); }}><RadioIcon />Chamar</button>
+          <button className="radio-alerta-fechar" aria-label="Fechar alerta" onClick={() => fecharAlerta(a.id)}>×</button>
+        </div>
+      </div>)}
+    </div>, document.body)}
     {aberto && createPortal(<div className="radio-backdrop">
       <section className="radio-card" role="dialog" aria-modal="true" aria-labelledby="radio-titulo" onKeyDown={e => {
         if (e.key === 'Escape') client.current?.end();
