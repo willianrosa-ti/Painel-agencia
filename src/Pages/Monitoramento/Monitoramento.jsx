@@ -81,6 +81,11 @@ function temCoordenadaValida(motorista) {
   return Boolean(obterPontoCoordenada(motorista?.latitude, motorista?.longitude));
 }
 
+// No mapa ficam só as motos online (livres e em corrida); quem está sem sinal ou desligou o app sai do mapa.
+function apareceNoMapa(motorista) {
+  return motorista?.statusMapa !== 'offline' && temCoordenadaValida(motorista);
+}
+
 function normalizarMotorista(dados) {
   if (!dados) return null;
 
@@ -234,7 +239,7 @@ export default function Monitoramento() {
         if (motorista.statusMapa === 'livre') acc.livres += 1;
         if (motorista.statusMapa === 'em_corrida') acc.emCorrida += 1;
         if (motorista.statusMapa === 'offline') acc.offline += 1;
-        if (temCoordenadaValida(motorista)) acc.localizados += 1;
+        if (apareceNoMapa(motorista)) acc.localizados += 1;
         return acc;
       },
       { livres: 0, emCorrida: 0, offline: 0, localizados: 0 }
@@ -327,7 +332,7 @@ export default function Monitoramento() {
       setAtualizadoEm(new Date().toISOString());
     });
 
-    // Posição em tempo real (o servidor só grava no banco de 30 em 30 s).
+    // Posição em tempo real (o servidor só grava no banco de minuto em minuto).
     conexao.on('MotoristaPosicao', (p) => {
       setMotoristas((lista) => lista.map((m) => String(m.id) === String(p.motoristaId)
         ? { ...m, latitude: p.latitude, longitude: p.longitude, ultimaAtividade: p.ultimaAtividade, temLocalizacao: true }
@@ -395,13 +400,13 @@ export default function Monitoramento() {
     if (separacaoRef.current) separacaoRef.current.removeFrom(mapa);
     const pernas = L.layerGroup().addTo(mapa);
     separacaoRef.current = pernas;
-    const pontos = motoristas.filter(temCoordenadaValida).map(m => {
+    const pontos = motoristas.filter(apareceNoMapa).map(m => {
       const p = mapa.latLngToLayerPoint([Number(m.latitude), Number(m.longitude)]);
       return { id: String(m.id), x: p.x, y: p.y };
     });
     const posicoes = new Map(distribuirMarcadores(pontos, 64).map(p => [p.id, p]));
     motoristas.forEach((motorista) => {
-      if (!temCoordenadaValida(motorista)) return;
+      if (!apareceNoMapa(motorista)) return;
 
       const id = String(motorista.id);
       const latitude = Number(motorista.latitude);
@@ -534,7 +539,7 @@ export default function Monitoramento() {
     if (!mapa) return;
 
     const pontos = motoristas
-      .filter(temCoordenadaValida)
+      .filter(apareceNoMapa)
       .map((motorista) => [Number(motorista.latitude), Number(motorista.longitude)]);
 
     if (pontos.length === 0) {
@@ -707,7 +712,7 @@ export default function Monitoramento() {
 
             {!carregando && resumo.localizados === 0 && (
               <div className="monitoramento-mapa-overlay monitoramento-mapa-overlay--vazio">
-                <span>Nenhum motoboy com GPS recente.</span>
+                <span>Nenhum motoboy online no mapa.</span>
               </div>
             )}
 

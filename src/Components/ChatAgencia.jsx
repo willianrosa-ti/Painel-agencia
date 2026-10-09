@@ -271,7 +271,7 @@ export default function ChatAgencia() {
               onClick={async () => { try { setAviso(await alertar('Motorista', selecionado) || 'Alerta enviado.'); setErro(''); } catch (e) { setErro(e.message); } }}>
               <IconeAlerta tamanho={18} />
             </button>
-            <button className="radio-beep" title="Bipar para chamar no rádio" disabled={disponivel !== 'radio'} onClick={() => chamar('Motorista', selecionado)}><RadioIcon />Bipar</button></div>
+            <button className="radio-beep radio-beep--icone" title="Chamar no rádio" aria-label="Chamar no rádio" disabled={disponivel !== 'radio'} onClick={() => chamar('Motorista', selecionado)}><RadioIcon /></button></div>
           {aviso && <p className="chat-agencia-aviso" aria-live="polite">{aviso}</p>}
           <div className="chat-agencia-history" ref={historicoRef} aria-live="polite" onScroll={e => { const el = e.currentTarget; acompanharRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 100; }}>
             {anteriores && <button className="chat-older" disabled={carregando} onClick={() => { alturaAnteriorRef.current = historicoRef.current?.scrollHeight ?? null; acompanharRef.current = false; setCarregando(true); carregarMensagens(selecionado, mensagens[0]?.id); }}>Carregar anteriores</button>}
