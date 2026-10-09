@@ -15,3 +15,13 @@ export function IconeLixeira({ tamanho = 20, className = '' }) {
     </svg>
   );
 }
+
+// Alerta (BIP BIP ALERTA): bola vermelha com "riscos vibrantes" dos dois lados, igual ao app do motorista.
+export function IconeAlerta({ tamanho = 22, cor = '#dc2626', className = '' }) {
+  return (
+    <svg className={`icone ${className}`} viewBox="0 0 32 20" width={tamanho * 1.6} height={tamanho} aria-hidden="true" focusable="false">
+      <circle cx="16" cy="10" r="4.6" fill={cor} />
+      <path d="M10.6 5.4a6.5 6.5 0 0 0 0 9.2M7 2.6a10.5 10.5 0 0 0 0 14.8M21.4 5.4a6.5 6.5 0 0 1 0 9.2M25 2.6a10.5 10.5 0 0 1 0 14.8" fill="none" stroke={cor} strokeWidth="1.9" strokeLinecap="round" />
+    </svg>
+  );
+}

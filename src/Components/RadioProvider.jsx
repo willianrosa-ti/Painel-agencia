@@ -6,6 +6,7 @@ import { RadioClient } from '../Services/RadioClient';
 import { radioMedia } from '../Services/radioMedia';
 import { RadioContext } from '../Services/radioContext';
 import './Radio.css';
+import { IconeAlerta } from './Icones';
 
 const API = 'https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net';
 const vazio = { chamada: null, eu: null, conectado: false, preparando: false, erro: '' };
@@ -73,7 +74,7 @@ export default function RadioProvider({ children }) {
     {children}
     {ativo && alertas.length > 0 && createPortal(<div className="radio-alertas" role="region" aria-label="Alertas recebidos">
       {alertas.map(a => <div key={a.id} className="radio-alerta" role="alert">
-        <span className="radio-alerta-icone" aria-hidden="true">🔔</span>
+        <span className="radio-alerta-icone" aria-hidden="true"><IconeAlerta tamanho={22} /></span>
         <div><strong>{a.de.nome}</strong><small>enviou um alerta · {new Date(a.em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</small></div>
         <div className="radio-alerta-acoes">
           <button onClick={() => { fecharAlerta(a.id); window.dispatchEvent(new CustomEvent('abrirChatMotorista', { detail: a.de.id })); }}>Abrir conversa</button>

@@ -5,7 +5,7 @@ import * as signalR from '@microsoft/signalr';
 import { ativarPushAgencia } from '../Services/agenciaPushNotifications';
 import { acrescentarMensagem, juntarMensagens as juntar, lerConversa, salvarConversa, ultimasMensagens } from '../Services/chatLocal';
 import { DURACAO_MAXIMA_MS, enviarAudio, formatarDuracao, obterAudio, textoSemIcone } from '../Services/audio';
-import { IconeLixeira, IconeMicrofone } from './Icones';
+import { IconeAlerta, IconeLixeira, IconeMicrofone } from './Icones';
 import { useGravacao } from '../Services/useGravacao';
 import AudioPlayer from './AudioPlayer';
 import './ChatAgencia.css';
@@ -261,7 +261,7 @@ export default function ChatAgencia() {
           <div className="chat-person-header"><button className="chat-back" onClick={() => { selecionadoRef.current = null; conversaProntaRef.current = null; setSelecionado(null); }} aria-label="Voltar aos motoristas">←</button><strong>{motorista.nome}<span className="chat-person-status">{situacao}</span></strong>
             <button className="chat-alert-btn" title="Enviar alerta (BIP BIP ALERTA)" aria-label="Enviar alerta" disabled={!['radio', 'alerta'].includes(disponivel)}
               onClick={async () => { try { setAviso(await alertar('Motorista', selecionado) || 'Alerta enviado.'); setErro(''); } catch (e) { setErro(e.message); } }}>
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M9 21h6" /></svg>
+              <IconeAlerta tamanho={18} />
             </button>
             <button className="radio-beep" title="Bipar para chamar no rádio" disabled={disponivel !== 'radio'} onClick={() => chamar('Motorista', selecionado)}><RadioIcon />Bipar</button></div>
           {aviso && <p className="chat-agencia-aviso" aria-live="polite">{aviso}</p>}
