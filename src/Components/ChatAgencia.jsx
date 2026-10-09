@@ -11,6 +11,7 @@ import AudioPlayer from './AudioPlayer';
 import './ChatAgencia.css';
 import { useRadio } from '../Services/radioContext';
 import { RadioIcon } from './RadioProvider';
+import { useAgenciaComunicacao } from '../Services/tipoAgencia';
 
 const API = 'https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net';
 const hora = data => new Date(/Z|[+-]\d\d:\d\d$/.test(data) ? data : `${data}Z`).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -23,6 +24,8 @@ async function api(caminho, init = {}) {
 
 export default function ChatAgencia() {
   const { chamar, alertar } = useRadio();
+  // Conta só de comunicação: as mensagens são entre os contatos no app; aqui ficam o rádio e o alerta.
+  const comunicacao = useAgenciaComunicacao();
   const [aviso, setAviso] = useState('');
   const location = useLocation();
   const ativo = Boolean(localStorage.getItem('tokenAgencia')) && !/^\/(login|admin)/.test(location.pathname);
@@ -248,10 +251,15 @@ export default function ChatAgencia() {
   }
   if (!ativo) return null;
   const motorista = conversas.find(c => c.motoristaId === selecionado);
-  // radio: "radio" (pode bipar), "alerta" (só alerta), "ocupado" ou "nenhum" (servidores antigos: sempre rádio).
-  const disponivel = motorista?.radio || 'radio';
-  const situacao = disponivel === 'ocupado' ? 'Ocupado · não recebe rádio nem alerta' : motorista?.online ? 'Online'
-    : disponivel === 'radio' ? 'Offline · recebe rádio' : disponivel === 'alerta' ? 'Offline · recebe só alerta' : 'Offline · pode deixar mensagem';
+  // podeRadio/podeAlerta: o que o motorista recebe agora (online, ocupado ou offline, conforme as Configurações dele).
+  // radio: formato antigo ("radio", "alerta", "ocupado" ou "nenhum"); servidores antigos: sempre rádio.
+  const legado = motorista?.radio || 'radio';
+  const podeRadio = motorista?.podeRadio ?? legado === 'radio';
+  const podeAlerta = motorista?.podeAlerta ?? ['radio', 'alerta'].includes(legado);
+  const disponivel = podeRadio ? 'radio' : podeAlerta ? 'alerta' : 'nenhum';
+  const recebe = podeRadio ? (podeAlerta ? 'recebe rádio e alerta' : 'recebe rádio') : podeAlerta ? 'recebe só alerta' : 'não recebe rádio nem alerta';
+  const situacao = (motorista?.situacao ?? (legado === 'ocupado' ? 'ocupado' : null)) === 'ocupado' ? `Ocupado · ${recebe}`
+    : motorista?.online ? 'Online' : `Offline · ${recebe}`;
   return createPortal(<div className="chat-agencia-root">
     {aberto && <section className={`chat-agencia-window ${selecionado ? 'chat-agencia-window--selected' : ''}`} role="dialog" aria-label="Mensagens com motoristas" onKeyDown={e => { if (e.key === 'Escape') alternar(); }}>
       <header className="chat-agencia-header"><div><strong>Conversas</strong><small><i className={conectado ? 'conectado' : ''} />{conectado ? 'Em tempo real' : 'Reconectando…'}</small></div><div className="chat-header-actions"><button title="Ativar notificações do dispositivo" aria-label="Ativar notificações" onClick={async () => { try { await ativarPushAgencia(localStorage.getItem('tokenAgencia')); setErro(''); } catch (e) { setErro(e.message); } }}><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M9 21h6" /></svg></button><button aria-label="Fechar conversas" onClick={alternar}>×</button></div></header>
@@ -259,7 +267,7 @@ export default function ChatAgencia() {
         <aside className="chat-agencia-contacts"><input aria-label="Buscar motorista" placeholder="Buscar motorista…" value={busca} onChange={e => setBusca(e.target.value)} /><div className="chat-contact-list">{conversas.filter(c => c.nome.toLowerCase().includes(busca.toLowerCase())).map(c => <button key={c.motoristaId} className={selecionado === c.motoristaId ? 'selected' : ''} onClick={() => selecionar(c.motoristaId)}><span className="chat-contact-avatar">{c.nome.slice(0, 1)}</span><span><strong>{c.nome}</strong><small>{textoSemIcone(c.ultimaMensagem || previas[c.motoristaId]) || 'Iniciar conversa'}</small></span>{c.naoLidas > 0 && <b>{c.naoLidas}</b>}</button>)}</div></aside>
         <div className="chat-agencia-conversation">{motorista ? <>
           <div className="chat-person-header"><button className="chat-back" onClick={() => { selecionadoRef.current = null; conversaProntaRef.current = null; setSelecionado(null); }} aria-label="Voltar aos motoristas">←</button><strong>{motorista.nome}<span className="chat-person-status">{situacao}</span></strong>
-            <button className="chat-alert-btn" title="Enviar alerta (BIP BIP ALERTA)" aria-label="Enviar alerta" disabled={!['radio', 'alerta'].includes(disponivel)}
+            <button className="chat-alert-btn" title="Enviar alerta (BIP BIP ALERTA)" aria-label="Enviar alerta" disabled={!podeAlerta}
               onClick={async () => { try { setAviso(await alertar('Motorista', selecionado) || 'Alerta enviado.'); setErro(''); } catch (e) { setErro(e.message); } }}>
               <IconeAlerta tamanho={18} />
             </button>
@@ -271,6 +279,7 @@ export default function ChatAgencia() {
             {mensagens.map(m => <div key={m.id} className={`chat-bubble ${m.remetente === 'Agencia' ? 'sent' : 'received'}${m.audioId ? ' chat-bubble--audio' : ''}`}>{m.audioId ? <AudioPlayer audioId={m.audioId} /> : <p>{m.texto}</p>}<small>{hora(m.criadoEm)}{m.remetente === 'Agencia' ? m.lidaEm ? ' · Lida' : ' · Enviada' : ''}</small></div>)}
           </div>
           {/* readOnly (e não disabled) durante o envio: o campo mantém o foco e o próximo texto já pode ser digitado após o Enter. */}
+          {comunicacao ? <p className="chat-agencia-aviso">Nesta conta as mensagens são só entre os contatos no app. Use o rádio ou o alerta.</p> :
           <form className="chat-agencia-compose" onSubmit={enviar}>
             {gravacao.gravando ? <div className="chat-gravacao" aria-live="polite"><span className="chat-gravacao-ponto" aria-hidden="true" />Gravando {formatarDuracao(gravacao.tempo)}</div>
               : audioPendente ? <div className="chat-gravacao"><AudioPlayer blob={audioPendente.blob} /></div>
@@ -280,7 +289,7 @@ export default function ChatAgencia() {
               <button type="button" onClick={enviarAudioAtual} disabled={enviando} aria-label="Enviar áudio">{enviando ? '…' : '↑'}</button>
             </> : texto.trim() ? <button disabled={enviando} aria-label="Enviar mensagem">{enviando ? '…' : '↑'}</button>
               : <button type="button" className="chat-microfone" onClick={gravarAudio} aria-label="Gravar áudio"><IconeMicrofone tamanho={23} /></button>}
-          </form>
+          </form>}
         </> : <div className="chat-empty"><span>↗</span><strong>Fale com sua frota</strong><p>Escolha um motorista para iniciar uma conversa.</p></div>}</div>
       </div>
       {erro && <p className="chat-agencia-error" role="alert">{erro}</p>}

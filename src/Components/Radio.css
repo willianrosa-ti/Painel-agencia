@@ -11,4 +11,5 @@
 .radio-alerta button:focus-visible{outline:3px solid #38bdf8;outline-offset:2px}
 .chat-alert-btn{border:1px solid #fca5a5!important;border-radius:12px!important;background:#fef2f2!important;color:#dc2626!important;padding:8px 10px!important;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}.chat-alert-btn:disabled{opacity:.4;cursor:not-allowed}
 .chat-person-status{display:block;font-size:12px;color:#64748b;font-weight:400}.chat-agencia-aviso{margin:0;padding:8px 16px;font-size:13px;color:#047857;background:#ecfdf5}
+.radio-volume{display:flex;align-items:center;gap:10px;font-size:12px;color:#64748b;width:100%}.radio-volume input{flex:1;accent-color:#047857}
 .radio-beep{border:1px solid #a7f3d0!important;border-radius:12px!important;background:#ecfdf5!important;color:#047857!important;padding:10px 14px!important;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:700;cursor:pointer}.radio-beep:disabled{opacity:.4;cursor:not-allowed}.monitor-radio{width:100%;margin:12px 0}

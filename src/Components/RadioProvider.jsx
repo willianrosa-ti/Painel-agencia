@@ -12,6 +12,7 @@ const API = 'https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net';
 const vazio = { chamada: null, eu: null, conectado: false, preparando: false, erro: '' };
 // Duração do PRI RADIO: o microfone só abre depois do bipe, como num rádio comunicador.
 const DURACAO_BIPE_MS = 650;
+const volumeBipe = () => { try { const v = Number(localStorage.getItem('volumeBipeRadio') ?? 1); return Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 1; } catch { return 1; } };
 export default function RadioProvider({ children }) {
   const location = useLocation();
   const token = localStorage.getItem('tokenAgencia');
@@ -45,7 +46,11 @@ export default function RadioProvider({ children }) {
       // Rádio pelo servidor, sem "atender": com o painel visível, a conexão é feita na hora.
       autoAtender: () => !document.hidden,
       bipe: () => {
+        // Volume do bipe escolhido na tela do rádio (a voz não muda); mudo = não toca e o microfone abre na hora.
+        const volume = volumeBipe();
+        if (volume <= 0) return 0;
         bipeRadio.current ??= new Audio(`${import.meta.env.BASE_URL}sounds/pri-radio.mp3`);
+        bipeRadio.current.volume = volume;
         bipeRadio.current.currentTime = 0; bipeRadio.current.play().catch(() => {});
         return DURACAO_BIPE_MS;
       },
@@ -98,6 +103,10 @@ export default function RadioProvider({ children }) {
             onKeyDown={e => { if ([' ', 'Enter'].includes(e.key)) { e.preventDefault(); if (!e.repeat) client.current?.press(); } }} onKeyUp={e => { if ([' ', 'Enter'].includes(e.key)) { e.preventDefault(); client.current?.release(); } }}>
             <RadioIcon />{falando ? 'Falando…' : 'Segure para falar'}
           </button><span className="radio-help">Espere o bipe para falar · solte para ouvir · até 20 s por fala</span>
+          <label className="radio-volume">Volume do bipe
+            <input type="range" min="0" max="1" step="0.25" defaultValue={volumeBipe()} aria-valuetext={`${Math.round(volumeBipe() * 100)}%`}
+              onChange={e => { try { localStorage.setItem('volumeBipeRadio', e.target.value); } catch { /* sem armazenamento */ } }} />
+          </label>
         </>}
         <button ref={botao} className="radio-end" onClick={() => client.current?.end()}>{call ? 'Encerrar rádio' : 'Fechar'}</button>
       </section>
