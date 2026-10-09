@@ -21,11 +21,11 @@ export default function RadioProvider({ children }) {
     if (!ativo) return;
     const hub = new signalR.HubConnectionBuilder().withUrl(`${API}/hub-radio`, { accessTokenFactory: () => localStorage.getItem('tokenAgencia') || '' }).withAutomaticReconnect().build();
     const c = new RadioClient({ hub, media: radioMedia, update: setEstado,
-      config: async (voz = false) => {
-        const r = await fetch(`${API}/api/Radio/config?voz=${voz}`, { headers: { Authorization: `Bearer ${localStorage.getItem('tokenAgencia')}` } });
+      config: async () => {
+        const r = await fetch(`${API}/api/Radio/config`, { headers: { Authorization: `Bearer ${localStorage.getItem('tokenAgencia')}` } });
         if (!r.ok) throw new Error('Sessão indisponível. Entre novamente.'); return r.json();
       },
-      // Rádio não tem "atender": com o painel visível, a conexão é feita na hora.
+      // Rádio pelo servidor, sem "atender": com o painel visível, a conexão é feita na hora.
       autoAtender: () => !document.hidden,
       bipe: () => {
         bipeRadio.current ??= new Audio(`${import.meta.env.BASE_URL}sounds/pri-radio.mp3`);
@@ -60,7 +60,7 @@ export default function RadioProvider({ children }) {
       }}>
         <div className="radio-mark"><RadioIcon /></div><small>RÁDIO PRIVADO</small><h2 id="radio-titulo">{other?.nome || 'Rádio'}</h2>
         {call && <p aria-live="polite">{call.status === 'Tocando' ? incoming ? 'Conectando o rádio…' : 'Chamando… conectando o rádio' : call.status === 'Ativa' ? falando ? 'Você está falando' : call.falante ? `${other?.nome} está falando` : 'Canal livre' : 'Conectando áudio…'}</p>}
-        {estado.preparando && <p>Preparando microfone…</p>}
+        {estado.preparando && <p>Abrindo o rádio…</p>}
         {estado.erro && <p className="radio-error" role="alert">{estado.erro}</p>}
         {call?.status === 'Ativa' && <>
           <button className={`radio-talk ${falando ? 'speaking' : ''}`} aria-label="Segure para falar no rádio" onPointerDown={e => { if (e.button !== 0) return; e.currentTarget.setPointerCapture(e.pointerId); client.current?.press(); }}
