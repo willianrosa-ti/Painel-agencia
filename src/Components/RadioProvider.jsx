@@ -12,6 +12,8 @@ const API = 'https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net';
 const vazio = { chamada: null, eu: null, conectado: false, preparando: false, erro: '' };
 // Duração do PRI RADIO: o microfone só abre depois do bipe, como num rádio comunicador.
 const DURACAO_BIPE_MS = 650;
+// Tempo máximo de cada fala (o servidor corta no mesmo tempo).
+const LIMITE_FALA_S = 30;
 const volumeBipe = () => { try { const v = Number(localStorage.getItem('volumeBipeRadio') ?? 1); return Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 1; } catch { return 1; } };
 const NIVEIS_BIPE = [0, 0.05, 0.1, 0.25, 0.5, 0.75, 1];
 const nivelBipe = () => { const v = volumeBipe(); return NIVEIS_BIPE.reduce((a, n) => Math.abs(n - v) < Math.abs(a - v) ? n : a, 1); };
@@ -73,6 +75,17 @@ export default function RadioProvider({ children }) {
   const call = estado.chamada, incoming = call?.status === 'Tocando' && call.destino.chave === estado.eu?.chave;
   const other = call?.origem.chave === estado.eu?.chave ? call?.destino : call?.origem;
   const falando = !!call?.falante && call.falante === estado.eu?.chave;
+  // Contagem regressiva da fala (de quem fala ou do outro), pela mesma hora que o rádio usa para cortar.
+  const [agora, setAgora] = useState(Date.now());
+  useEffect(() => {
+    if (!call?.falante || !call.falaAte) return undefined;
+    setAgora(Date.now());
+    const relogio = setInterval(() => setAgora(Date.now()), 250);
+    return () => clearInterval(relogio);
+  }, [call?.falante, call?.falaAte]);
+  const segundosFala = call?.falante && call.falaAte
+    ? Math.max(0, Math.min(LIMITE_FALA_S, Math.ceil((Date.parse(call.falaAte) - agora) / 1000))) : null;
+  const restante = segundosFala === null ? '' : ` · ${segundosFala} s`;
   const aberto = ativo && (!!call || !!estado.erro || estado.preparando);
   useEffect(() => { if (aberto) botao.current?.focus(); }, [aberto]);
   const fecharAlerta = id => setAlertas(lista => lista.filter(a => a.id !== id));
@@ -96,15 +109,17 @@ export default function RadioProvider({ children }) {
         if (e.key === 'Tab') { const focus = [...e.currentTarget.querySelectorAll('button:not([disabled])')]; const next = e.shiftKey ? focus.at(-1) : focus[0]; if (document.activeElement === (e.shiftKey ? focus[0] : focus.at(-1))) { e.preventDefault(); next?.focus(); } }
       }}>
         <div className="radio-mark"><RadioIcon /></div><small>RÁDIO PRIVADO</small><h2 id="radio-titulo">{other?.nome || 'Rádio'}</h2>
-        {call && <p aria-live="polite">{call.status === 'Tocando' ? incoming ? 'Conectando o rádio…' : 'Chamando… conectando o rádio' : call.status === 'Ativa' ? falando ? 'Você está falando' : call.falante ? `${other?.nome} está falando` : 'Canal livre' : 'Conectando áudio…'}</p>}
+        {call && <p aria-live="polite">{call.status === 'Tocando' ? incoming ? 'Conectando o rádio…' : 'Chamando… conectando o rádio' : call.status === 'Ativa' ? falando ? `Você está falando${restante}` : call.falante ? `${other?.nome} está falando${restante}` : 'Canal livre' : 'Conectando áudio…'}</p>}
         {estado.preparando && <p>Abrindo o rádio…</p>}
         {estado.erro && <p className="radio-error" role="alert">{estado.erro}</p>}
         {call?.status === 'Ativa' && <>
           <button className={`radio-talk ${falando ? 'speaking' : ''}`} aria-label="Segure para falar no rádio" onPointerDown={e => { if (e.button !== 0) return; e.currentTarget.setPointerCapture(e.pointerId); client.current?.press(); }}
             onPointerUp={() => client.current?.release()} onPointerCancel={() => client.current?.release()} onLostPointerCapture={() => client.current?.release()} onBlur={() => client.current?.release()}
             onKeyDown={e => { if ([' ', 'Enter'].includes(e.key)) { e.preventDefault(); if (!e.repeat) client.current?.press(); } }} onKeyUp={e => { if ([' ', 'Enter'].includes(e.key)) { e.preventDefault(); client.current?.release(); } }}>
-            <RadioIcon />{falando ? 'Falando…' : 'Segure para falar'}
-          </button><span className="radio-help">Espere o bipe para falar · solte para ouvir · até 20 s por fala</span>
+            <RadioIcon />
+            {falando && segundosFala !== null && <span className={`radio-contagem ${segundosFala <= 5 ? 'radio-contagem--fim' : ''}`}>{segundosFala} s</span>}
+            {falando ? 'Falando…' : 'Segure para falar'}
+          </button><span className="radio-help">Espere o bipe para falar · solte para ouvir · até {LIMITE_FALA_S} s por fala</span>
           <label className="radio-volume">Volume do bipe
             <select defaultValue={String(nivelBipe())} onChange={e => {
               try { localStorage.setItem('volumeBipeRadio', e.target.value); } catch { /* sem armazenamento */ }
