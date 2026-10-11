@@ -85,7 +85,6 @@ export default function RadioProvider({ children }) {
   }, [call?.falante, call?.falaAte]);
   const segundosFala = call?.falante && call.falaAte
     ? Math.max(0, Math.min(LIMITE_FALA_S, Math.ceil((Date.parse(call.falaAte) - agora) / 1000))) : null;
-  const restante = segundosFala === null ? '' : ` · ${segundosFala} s`;
   const aberto = ativo && (!!call || !!estado.erro || estado.preparando);
   useEffect(() => { if (aberto) botao.current?.focus(); }, [aberto]);
   const fecharAlerta = id => setAlertas(lista => lista.filter(a => a.id !== id));
@@ -109,7 +108,7 @@ export default function RadioProvider({ children }) {
         if (e.key === 'Tab') { const focus = [...e.currentTarget.querySelectorAll('button:not([disabled])')]; const next = e.shiftKey ? focus.at(-1) : focus[0]; if (document.activeElement === (e.shiftKey ? focus[0] : focus.at(-1))) { e.preventDefault(); next?.focus(); } }
       }}>
         <div className="radio-mark"><RadioIcon /></div><small>RÁDIO PRIVADO</small><h2 id="radio-titulo">{other?.nome || 'Rádio'}</h2>
-        {call && <p aria-live="polite">{call.status === 'Tocando' ? incoming ? 'Conectando o rádio…' : 'Chamando… conectando o rádio' : call.status === 'Ativa' ? falando ? `Você está falando${restante}` : call.falante ? `${other?.nome} está falando${restante}` : 'Canal livre' : 'Conectando áudio…'}</p>}
+        {call && <p aria-live="polite">{call.status === 'Tocando' ? incoming ? 'Conectando o rádio…' : 'Chamando… conectando o rádio' : call.status === 'Ativa' ? falando ? 'Você está falando' : call.falante ? 'Recebendo áudio' : 'Canal livre' : 'Conectando áudio…'}</p>}
         {estado.preparando && <p>Abrindo o rádio…</p>}
         {estado.erro && <p className="radio-error" role="alert">{estado.erro}</p>}
         {call?.status === 'Ativa' && <>
@@ -117,8 +116,8 @@ export default function RadioProvider({ children }) {
             onPointerUp={() => client.current?.release()} onPointerCancel={() => client.current?.release()} onLostPointerCapture={() => client.current?.release()} onBlur={() => client.current?.release()}
             onKeyDown={e => { if ([' ', 'Enter'].includes(e.key)) { e.preventDefault(); if (!e.repeat) client.current?.press(); } }} onKeyUp={e => { if ([' ', 'Enter'].includes(e.key)) { e.preventDefault(); client.current?.release(); } }}>
             <RadioIcon />
-            {falando && segundosFala !== null && <span className={`radio-contagem ${segundosFala <= 5 ? 'radio-contagem--fim' : ''}`}>{segundosFala} s</span>}
-            {falando ? 'Falando…' : 'Segure para falar'}
+            {segundosFala !== null && <span role="timer" aria-label={`${segundosFala} segundos restantes`} className={`radio-contagem ${segundosFala <= 5 ? 'radio-contagem--fim' : ''}`}>{segundosFala} s</span>}
+            <span className="radio-talk-label">{falando ? 'Falando…' : 'Segure para falar'}</span>
           </button><span className="radio-help">Espere o bipe para falar · solte para ouvir · até {LIMITE_FALA_S} s por fala</span>
           <label className="radio-volume">Volume do bipe
             <select defaultValue={String(nivelBipe())} onChange={e => {

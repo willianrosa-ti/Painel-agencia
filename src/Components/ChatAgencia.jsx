@@ -11,7 +11,6 @@ import AudioPlayer from './AudioPlayer';
 import './ChatAgencia.css';
 import { useRadio } from '../Services/radioContext';
 import { RadioIcon } from './RadioProvider';
-import { useAgenciaComunicacao } from '../Services/tipoAgencia';
 
 const API = 'https://motoapp-bwadauh0dbcqbubb.centralus-01.azurewebsites.net';
 const hora = data => new Date(/Z|[+-]\d\d:\d\d$/.test(data) ? data : `${data}Z`).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -24,8 +23,6 @@ async function api(caminho, init = {}) {
 
 export default function ChatAgencia() {
   const { chamar, alertar } = useRadio();
-  // Conta só de comunicação: as mensagens são entre os contatos no app; aqui ficam o rádio e o alerta.
-  const comunicacao = useAgenciaComunicacao();
   const [aviso, setAviso] = useState('');
   const location = useLocation();
   const ativo = Boolean(localStorage.getItem('tokenAgencia')) && !/^\/(login|admin)/.test(location.pathname);
@@ -279,7 +276,6 @@ export default function ChatAgencia() {
             {mensagens.map(m => <div key={m.id} className={`chat-bubble ${m.remetente === 'Agencia' ? 'sent' : 'received'}${m.audioId ? ' chat-bubble--audio' : ''}`}>{m.audioId ? <AudioPlayer audioId={m.audioId} /> : <p>{m.texto}</p>}<small>{hora(m.criadoEm)}{m.remetente === 'Agencia' ? m.lidaEm ? ' · Lida' : ' · Enviada' : ''}</small></div>)}
           </div>
           {/* readOnly (e não disabled) durante o envio: o campo mantém o foco e o próximo texto já pode ser digitado após o Enter. */}
-          {comunicacao ? <p className="chat-agencia-aviso">Nesta conta as mensagens são só entre os contatos no app. Use o rádio ou o alerta.</p> :
           <form className="chat-agencia-compose" onSubmit={enviar}>
             {gravacao.gravando ? <div className="chat-gravacao" aria-live="polite"><span className="chat-gravacao-ponto" aria-hidden="true" />Gravando {formatarDuracao(gravacao.tempo)}</div>
               : audioPendente ? <div className="chat-gravacao"><AudioPlayer blob={audioPendente.blob} /></div>
@@ -289,7 +285,7 @@ export default function ChatAgencia() {
               <button type="button" onClick={enviarAudioAtual} disabled={enviando} aria-label="Enviar áudio">{enviando ? '…' : '↑'}</button>
             </> : texto.trim() ? <button disabled={enviando} aria-label="Enviar mensagem">{enviando ? '…' : '↑'}</button>
               : <button type="button" className="chat-microfone" onClick={gravarAudio} aria-label="Gravar áudio"><IconeMicrofone tamanho={23} /></button>}
-          </form>}
+          </form>
         </> : <div className="chat-empty"><span>↗</span><strong>Fale com sua frota</strong><p>Escolha um motorista para iniciar uma conversa.</p></div>}</div>
       </div>
       {erro && <p className="chat-agencia-error" role="alert">{erro}</p>}
